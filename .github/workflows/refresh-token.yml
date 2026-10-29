@@ -1,0 +1,28 @@
+name: Renovar token de Instagram
+
+# El token de Instagram caduca a los 60 días. Este workflow lo renueva el día 1 de cada mes.
+on:
+  schedule:
+    - cron: "13 6 1 * *"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    # Solo cuando Instagram está activado (variable INSTAGRAM_PUBLISH = true)
+    if: vars.INSTAGRAM_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Renovar y guardar el nuevo token
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          NEW=$(python -m agent.main refresh-token | tail -n 1)
+          echo "::add-mask::$NEW"
+          gh secret set IG_ACCESS_TOKEN --body "$NEW" --repo "${{ github.repository }}"
+          echo "Token renovado"

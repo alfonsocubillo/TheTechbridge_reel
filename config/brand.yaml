@@ -1,0 +1,110 @@
+# ─────────────────────────────────────────────────────────────
+#  Identidad y línea editorial de la cuenta. Todo es editable.
+# ─────────────────────────────────────────────────────────────
+
+brand:
+  name: "The TechBridge Solution"
+  handle: "@thetechbridgesolution"
+  website: "https://thetechbridgesolution.com"
+  logo_url: "https://thetechbridgesolution.com/wp-content/uploads/2025/07/thetechbridgesolution-logo.png"
+  # Qué hace la empresa (el guionista lo usa para que los temas tengan coherencia)
+  about: >
+    Consultora española de formación y servicios en Microsoft 365 e IA aplicada al trabajo:
+    Copilot, ChatGPT, Power BI, SharePoint, automatización y productividad. Forma a profesionales,
+    mandos intermedios y directivos para que trabajen mejor con tecnología.
+
+audience: >
+  Profesionales de 35 a 60 años: directivos, mandos intermedios, dueños de pymes, autónomos y
+  responsables de equipo en España y Latinoamérica. Les interesa la empresa, la productividad y
+  entender qué está pasando con la IA sin tecnicismos. Valoran el criterio, no el ruido.
+
+tone: >
+  Español de España, claro y con criterio. Cercano pero profesional, nunca infantil ni de "gurú".
+  Frases cortas, datos concretos, curiosidad. Cero venta directa: el objetivo es que el vídeo
+  interese tanto que la gente siga la cuenta por sí misma.
+
+# Paletas de acento. Cada formato tiene la suya (campo `accent` de cada formato), así el vídeo y la portada
+# comparten color y en el perfil se reconoce cada formato de un vistazo.
+visual:
+  background: "#070B18"
+  text: "#F5F7FF"
+  muted: "#9AA4C7"
+  accents:
+    - ["#3B82F6", "#22D3EE"]   # azul eléctrico → cian
+    - ["#7C3AED", "#3B82F6"]   # violeta → azul
+    - ["#06B6D4", "#10B981"]   # cian → verde
+    - ["#F59E0B", "#EF4444"]   # ámbar → rojo (para "dato impactante")
+    - ["#6366F1", "#EC4899"]   # índigo → magenta
+    - ["#0EA5E9", "#A855F7"]   # celeste → púrpura
+    - ["#22C55E", "#EAB308"]   # verde → amarillo
+
+# Formatos que se van rotando para que haya variedad.
+#   needs_news: true  → se basa en una noticia real de las fuentes
+#   needs_news: false → contenido "evergreen" (trucos, ideas) que no necesita noticia
+formats:
+  noticia:
+    needs_news: true
+    accent: 0
+    label: "ACABA DE SALIR"
+    brief: "Una novedad real de esta semana y por qué le importa a alguien que dirige o trabaja en una empresa."
+  dato:
+    needs_news: true
+    accent: 3
+    label: "EL DATO"
+    brief: "Un dato llamativo SACADO DE LA NOTICIA (nunca inventado) y lo que significa en la práctica."
+  tendencia:
+    needs_news: true
+    accent: 1
+    label: "LO QUE YA ESTÁ PASANDO"
+    brief: "Qué están haciendo las empresas que van por delante, a partir de una noticia real."
+  truco:
+    needs_news: false
+    accent: 2
+    label: "TRUCO"
+    brief: "Un truco concreto y real de Microsoft 365, Copilot, ChatGPT, Excel, Outlook o Teams que ahorra tiempo de verdad."
+  prompt:
+    needs_news: false
+    accent: 4
+    label: "PROMPT DEL DÍA"
+    brief: "Un prompt útil para el trabajo (correo difícil, resumen de reunión, análisis de datos...) mostrado en una ventana de chat animada."
+  antes_despues:
+    needs_news: false
+    accent: 5
+    label: "ANTES vs AHORA"
+    brief: "Cómo cambia una tarea cotidiana de oficina con IA o automatización. Comparación visual."
+  mito:
+    needs_news: false
+    accent: 6
+    label: "MITO O REALIDAD"
+    brief: "Un mito frecuente sobre la IA o la tecnología en la empresa y la realidad, con matices."
+
+# Fuentes de noticias (RSS/Atom). Si alguna falla, se ignora y sigue.
+sources:
+  - "https://www.microsoft.com/en-us/microsoft-365/blog/feed/"
+  - "https://blogs.microsoft.com/feed/"
+  - "https://openai.com/news/rss.xml"
+  - "https://blog.google/technology/ai/rss/"
+  - "https://techcrunch.com/category/artificial-intelligence/feed/"
+  - "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+  - "https://feeds.weblogssl.com/xataka2"
+
+# Revisión por email antes de publicar (horas en hora de Madrid)
+review:
+  timezone: "Europe/Madrid"
+  generate_hour: 2        # se genera el vídeo del día
+  email_hour: 10          # le llega el correo con el vídeo para aprobar
+  regenerate_hour: 17     # si pide otro, se genera y se le envía a esta hora
+  publish_after: "19:00"  # si lo aprueba, se publica a esta hora (si aprueba más tarde, al momento)
+
+audio:
+  # Proporción de vídeos con voz en off (si hay clave de ElevenLabs). El resto, música + texto.
+  voice_ratio: 0.5
+  music_volume_with_voice: 0.12
+  music_volume_alone: 0.55
+
+# Texto del post. El guionista escribe el cuerpo y unos hashtags del tema; esto se añade siempre al final
+# para que todas las publicaciones cierren igual. Instagram admite como mucho 5 hashtags por publicación.
+caption:
+  footer: "Cada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution"
+  brand_hashtags: ["#TheTechBridgeSolution"]
+  max_hashtags: 5

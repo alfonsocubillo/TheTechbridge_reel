@@ -1,0 +1,58 @@
+{
+  "format": "prompt",
+  "topic": "Resumir el correo del día con IA",
+  "cover": {
+    "title": "Tu bandeja, resumida en minutos",
+    "highlight": "resumida"
+  },
+  "scenes": [
+    {
+      "type": "hook",
+      "text": "Deja de leer correos uno a uno",
+      "highlight": "uno",
+      "broll": "hands typing laptop dark",
+      "voice": "Si todavía lees los correos uno a uno, esto te interesa."
+    },
+    {
+      "type": "prompt",
+      "app": "Copilot",
+      "prompt": "Resume los correos de hoy y dime cuáles necesitan respuesta antes de las 12",
+      "result": [
+        "Urgentes primero",
+        "Informativos agrupados",
+        "Lo que puede esperar, al final"
+      ],
+      "voice": "Pídele a tu asistente un resumen de la bandeja con lo urgente arriba."
+    },
+    {
+      "type": "compare",
+      "left_title": "Antes",
+      "left": "Media mañana revisando la bandeja",
+      "right_title": "Ahora",
+      "right": "Un resumen y decides en minutos",
+      "voice": "Pasas de revisar la bandeja entera a decidir con un resumen delante."
+    },
+    {
+      "type": "list",
+      "title": "Pruébalo mañana",
+      "items": [
+        "Abre tu asistente",
+        "Pega el prompt",
+        "Responde solo lo urgente"
+      ],
+      "voice": "Pruébalo mañana a primera hora: tres pasos y listo."
+    },
+    {
+      "type": "outro",
+      "text": "Guárdalo para el lunes",
+      "voice": "Guárdalo para el lunes."
+    }
+  ],
+  "caption": "¿Cuánto tiempo pierdes cada mañana leyendo correos que no necesitaban respuesta?\n\nCopilot en Outlook (o cualquier asistente de IA) puede resumirte la bandeja y ordenar los correos por urgencia. Tú decides qué responder con el resumen delante, sin abrirlos uno a uno.\n\nPruébalo así:\n1. Abre tu asistente a primera hora.\n2. Pega este prompt: \"Resume los correos de hoy y dime cuáles necesitan respuesta antes de las 12\".\n3. Responde solo lo urgente y deja el resto para un bloque de 15 minutos por la tarde.\n\nGuárdalo para el lunes, que es cuando más se acumula.\n\n¿Cuántos correos tienes ahora mismo sin leer?",
+  "hashtags": [
+    "#Copilot",
+    "#Outlook",
+    "#productividad",
+    "#correo"
+  ]
+}

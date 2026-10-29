@@ -1,0 +1,153 @@
+name: Reels con aprobación
+
+# Cada 10 minutos se comprueba el correo y la hora (Madrid) y se decide qué toca:
+#   02:00 generar · 10:00 enviar a revisión · 17:00 rehacer si lo ha pedido · publicar si lo ha aprobado
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Forzar una acción (vacío = automático)"
+        type: choice
+        options: ["", "generate", "regenerate", "email", "publish"]
+        default: ""
+
+concurrency:
+  group: reels
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+env:
+  # Claude con tu suscripción (sale de `claude setup-token`). No pongas ANTHROPIC_API_KEY: eso es la API de pago.
+  CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+  # Clips de stock, ambos opcionales y gratis. Sin ninguno, el vídeo usa el fondo animado de la marca.
+  PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+  PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+  ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+  ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+  IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+  MAIL_USER: ${{ secrets.MAIL_USER }}
+  MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
+  BOSS_EMAIL: ${{ secrets.BOSS_EMAIL }}
+  CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL || 'claude-opus-5-5' }}
+  # Instagram apagado hasta que la variable INSTAGRAM_PUBLISH valga "true" (Settings → Variables).
+  # Mientras tanto, al aprobar un vídeo llega un correo con el vídeo, la portada y el texto.
+  INSTAGRAM_PUBLISH: ${{ vars.INSTAGRAM_PUBLISH || 'false' }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  # Paso ligero (unos segundos): lee el correo, mira la hora y decide
+  decide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      action: ${{ steps.tick.outputs.action }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: |
+          pip install -q -r requirements.txt
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+      - id: tick
+        run: python -m agent.scheduler tick ${{ inputs.force && format('--force {0}', inputs.force) || '' }}
+      - name: Guardar estado
+        run: |
+          git config user.name "reels-bot"
+          git config user.email "reels-bot@users.noreply.github.com"
+          git add data/state.json data/history.json
+          git diff --cached --quiet || (git commit -qm "Estado: ${{ steps.tick.outputs.action }}" && git push)
+
+  # Paso pesado: investigar, escribir y renderizar (02:00, o 17:00 si pidió otro)
+  generate:
+    needs: decide
+    if: needs.decide.outputs.action == 'generate' || needs.decide.outputs.action == 'regenerate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-color-emoji > /dev/null
+          pip install -q -r requirements.txt
+          cd video && npm install --no-audit --no-fund && npx remotion browser ensure
+      - name: Generar vídeo
+        run: python -m agent.scheduler generate --mode ${{ needs.decide.outputs.action }}
+      - name: Guardar estado e historial
+        run: |
+          git config user.name "reels-bot"
+          git config user.email "reels-bot@users.noreply.github.com"
+          git add data/state.json
+          git commit -qm "Vídeo generado (${{ needs.decide.outputs.action }})" || exit 0
+          git pull -q --rebase && git push
+
+  # Publicación en Instagram (solo si la directora lo ha aprobado)
+  publish:
+    needs: decide
+    if: needs.decide.outputs.action == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -q -r requirements.txt
+      - name: Descargar el vídeo aprobado
+        run: |
+          TAG=$(python -c "import json;print(json.load(open('data/state.json'))['item']['tag'])")
+          mkdir -p site
+          gh release download "$TAG" --repo "${{ github.repository }}" --pattern reel.mp4 --pattern cover.jpg --dir site
+          mv site/reel.mp4 "site/$TAG.mp4"
+          [ -f site/cover.jpg ] && mv site/cover.jpg "site/$TAG.jpg"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "<!doctype html><title>reels</title>" > site/index.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Publicar en Instagram
+        run: |
+          URL="${{ steps.deployment.outputs.page_url }}$TAG.mp4"
+          for i in $(seq 1 30); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' "$URL")" = "200" ] && break
+            echo "Esperando a que el vídeo esté online..."; sleep 10
+          done
+          COVER="${{ steps.deployment.outputs.page_url }}$TAG.jpg"
+          if [ "$(curl -s -o /dev/null -w '%{http_code}' "$COVER")" = "200" ]; then
+            python -m agent.scheduler publish --video-url "$URL" --cover-url "$COVER"
+          else
+            python -m agent.scheduler publish --video-url "$URL"
+          fi
+      - name: Guardar estado e historial
+        run: |
+          git config user.name "reels-bot"
+          git config user.email "reels-bot@users.noreply.github.com"
+          git add data/state.json data/history.json
+          git commit -qm "Reel publicado $(date -u +%F)" || exit 0
+          git pull -q --rebase && git push
