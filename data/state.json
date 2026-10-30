@@ -19,7 +19,8 @@
     "day": "2026-10-30",
     "kind": "nightly",
     "attempt": 1,
-    "status": "generated",
-    "private": null
+    "status": "discarded",
+    "private": null,
+    "discarded_reason": "Generado con la versión anterior (tema corporativo); se sustituye por uno del nuevo diseño"
   }
 }
