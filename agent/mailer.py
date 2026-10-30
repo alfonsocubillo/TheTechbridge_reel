@@ -148,13 +148,18 @@ def _story_status(card: dict) -> str:
 
 def story_grid(cards: list[dict]) -> str:
     e = html.escape
-    cells = "".join(
-        f'<td width="33%" valign="top" style="padding:4px 6px 4px 0">'
-        f'<img src="cid:{c["cid"]}" width="160" style="width:100%;max-width:160px;border-radius:10px;display:block" alt="Historia">'
-        f'<div style="font-size:12px;font-weight:700;color:#2563eb;margin-top:6px">{e(c["label"])} · {e(_story_status(c))}</div>'
-        f'<div style="font-size:13px;color:#1f2937;line-height:1.35">{e(c["title"])}</div></td>'
-        for c in cards[:6])
-    return f'<table cellpadding="0" cellspacing="0" width="100%"><tr>{cells}</tr></table>'
+    cells = []
+    for c in cards[:6]:
+        link = (f'<div style="font-size:12px;margin-top:4px"><a href="{e(c["source_url"])}" style="color:#2563eb">'
+                f'🔗 Noticia original</a></div>' if c.get("source_url") else "")
+        cells.append(
+            f'<td width="33%" valign="top" style="padding:4px 6px 4px 0">'
+            f'<img src="cid:{c["cid"]}" width="160" style="width:100%;max-width:160px;border-radius:10px;display:block" alt="Historia">'
+            f'<div style="font-size:12px;font-weight:700;color:#2563eb;margin-top:6px">{e(c["label"])} · {e(_story_status(c))}</div>'
+            f'<div style="font-size:13px;color:#1f2937;line-height:1.35">{e(c["title"])}</div>{link}</td>')
+    note = ('<p style="margin:10px 0 0;font-size:12px;color:#5b6478;line-height:1.5">🔗 Si la publicas a mano, añade el '
+            'enlace de la noticia con el sticker de enlace de Instagram.</p>' if any(c.get("source_url") for c in cards) else "")
+    return f'<table cellpadding="0" cellspacing="0" width="100%"><tr>{"".join(cells)}</tr></table>{note}'
 
 
 def stories_block(cards: list[dict], tag: str) -> str:

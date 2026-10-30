@@ -165,7 +165,7 @@ def story_cards(stories: list[dict], prefix: str = "st") -> tuple[list[dict], di
         cid = f"{prefix}{i}"
         inline[cid] = OUT_DIR / st["thumb"]
         cards.append({"cid": cid, "label": st["label"], "title": st["title"], "at": st["at"], "status": st["status"],
-                      "day": st["day"]})
+                      "day": st["day"], "source_url": st.get("source_url"), "source": st.get("source")})
     return cards, inline
 
 
@@ -547,7 +547,8 @@ def cmd_stories(args) -> None:
             log.info("Nada de última hora que merezca una historia")
             save_state(state)
             return
-        stories = writer.write_stories(cfg, ["ultima_hora"], [pick], recent_titles=recent)
+        article = news.fetch_article_text(pick["url"], limit=8000)
+        stories = writer.write_stories(cfg, ["ultima_hora"], [pick], recent_titles=recent, article=article)
         for s in stories:
             s["source_url"] = pick["url"]
         origin, start = "news", "16:00"

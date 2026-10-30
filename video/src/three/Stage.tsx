@@ -8,6 +8,8 @@ import {matcap} from './matcap';
 export type Vec3 = [number, number, number];
 export type Cam = {pos: Vec3; target: Vec3; fov?: number};
 
+const camDist = (c: Cam) => Math.hypot(c.pos[0] - c.target[0], c.pos[1] - c.target[1], c.pos[2] - c.target[2]);
+
 /** Cámara: posición y punto al que mira, calculados fuera a partir del fotograma. */
 const CameraRig: React.FC<{cam: Cam}> = ({cam}) => {
   const ref = useRef<THREE.PerspectiveCamera>(null);
@@ -61,7 +63,8 @@ export const Stage: React.FC<{
 }> = ({width, height, bg, accentA, accentB, cam, floor = true, dpr = 0.5, env = false, dust = true, children}) => (
   <ThreeCanvas width={width} height={height} gl={{antialias: false, alpha: true, powerPreference: 'high-performance'}} dpr={dpr} style={{position: 'absolute', inset: 0}}>
     <CameraRig cam={cam} />
-    <fog attach="fog" args={[bg, 9, 26]} />
+    {/* La niebla acompaña a la cámara: el objeto se ve igual de nítido esté cerca o lejos */}
+    <fog attach="fog" args={[bg, camDist(cam) - 3, camDist(cam) + 16]} />
     <ambientLight intensity={0.35} />
     <directionalLight position={[3, 6, 5]} intensity={1.6} />
     <pointLight position={[-4, 2, 3]} intensity={18} distance={14} color={accentA} />

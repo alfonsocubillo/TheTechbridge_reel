@@ -316,9 +316,17 @@ def validate(sb: dict) -> None:
         raise ValueError(f"número de escenas fuera de rango: {len(scenes)}")
     if scenes[0]["type"] != "hook" or scenes[-1]["type"] != "outro":
         raise ValueError("la primera escena debe ser hook y la última outro")
+    limits = {"hook": {"text": 12}, "stat": {"label": 13}, "broll": {"title": 10, "subtitle": 15},
+              "compare": {"left": 13, "right": 13}, "quote": {"text": 20}, "prompt": {"prompt": 34},
+              "outro": {"text": 10}, "list": {"title": 8}}
     for s in scenes:
         if s.get("type") not in SCENE_TYPES:
             raise ValueError(f"tipo de escena desconocido: {s.get('type')}")
+        for field, most in limits.get(s["type"], {}).items():
+            if len(str(s.get(field, "")).split()) > most:
+                raise ValueError(f"escena {s['type']}: '{field}' es demasiado largo (máx {most - 2} palabras)")
+        if s["type"] == "list" and any(len(str(i).split()) > 8 for i in s.get("items", [])):
+            raise ValueError("list: cada punto debe tener máximo 6 palabras")
         if not s.get("voice"):
             raise ValueError(f"escena {s['type']} sin 'voice'")
         if s["type"] == "stat":
@@ -352,15 +360,24 @@ Devuelve SOLO un JSON: {"stories": [ ... ]}
 Cada historia:
 {"kind": "noticia | truco | dato | pregunta | reel | ultima_hora",
  "product": "producto de la lista, escrito igual",
- "title": "frase principal, máx 8 palabras",
+ "title": "frase principal, máx 9 palabras",
  "highlight": "una palabra del título, escrita igual",
- "body": "el detalle útil en 1-2 frases, máx 24 palabras",
+ "body": "el detalle útil en 1-2 frases, máx 28 palabras",
+ "points": ["...", "...", "..."],   // SOLO en noticia y ultima_hora (ver reglas)
+ "source": "...",                    // SOLO en noticia y ultima_hora (ver reglas)
  "cta": "remate corto, máx 6 palabras"}
 
 Reglas:
 - Se ven 7-10 segundos en el móvil: el título se entiende solo y el cuerpo añade el dato o el paso concreto.
 - Todo trata de los productos de la lista y de cómo usarlos mejor en el trabajo.
-- "noticia" y "ultima_hora": solo con una noticia real de las proporcionadas; cuenta qué cambia para quien usa el producto.
+- "noticia" y "ultima_hora": solo con la noticia real proporcionada, apoyándote en su TEXTO COMPLETO. Tienen que
+  entenderse enteras sin abrir ningún enlace:
+  · "title": qué ha pasado, con el producto y la función por su nombre (ej: "Copilot ya limpia los datos en Excel").
+  · "body": en qué consiste exactamente, en lenguaje de oficina.
+  · "points": 2 o 3 datos concretos, máx 10 palabras cada uno, que respondan a qué hace, quién lo tiene
+    (licencia, plan, Windows/Mac/web) y desde cuándo, si el texto lo dice. Nada genérico ni que no esté en la fuente.
+  · "source": el medio y, si se sabe, la fecha (ej: "Microsoft · Blog de Excel, 28 oct").
+  Si la noticia no da para eso, mejor otro tipo de historia.
 - "truco": un truco real y comprobable (atajo, función, prompt corto).
 - "dato": un dato real con su fuente en el cuerpo ("según Microsoft..."). Nunca inventes cifras.
 - "pregunta": una pregunta fácil de responder por mensaje sobre cómo trabajan (ej: "¿Usas ya Copilot en Teams?").
@@ -380,16 +397,22 @@ def validate_stories(data: dict, expected: int | None = None) -> list[dict]:
     for s in stories:
         if s.get("kind") not in STORY_KINDS:
             raise ValueError(f"tipo de historia desconocido: {s.get('kind')}")
-        if not s.get("title") or len(str(s["title"]).split()) > 10:
-            raise ValueError("cada historia necesita un título de máximo 8 palabras")
-        if len(str(s.get("body", "")).split()) > 34:
-            raise ValueError("el cuerpo de una historia pasa de 24 palabras")
+        if not s.get("title") or len(str(s["title"]).split()) > 11:
+            raise ValueError("cada historia necesita un título de máximo 9 palabras")
+        if len(str(s.get("body", "")).split()) > 36:
+            raise ValueError("el cuerpo de una historia pasa de 28 palabras")
+        if s["kind"] in {"noticia", "ultima_hora"}:
+            pts = s.get("points") or []
+            if not 2 <= len(pts) <= 3 or any(len(str(x).split()) > 13 for x in pts):
+                raise ValueError("una noticia necesita 2-3 'points' de máximo 10 palabras")
+            if not s.get("source"):
+                raise ValueError("una noticia necesita 'source' (medio y fecha)")
     return stories
 
 
 def write_stories(cfg: dict, plan: list[str] | None, news: list[dict], reel_topic: str | None = None,
                   recent_titles: list[str] = (), materials: str = "", images: list[dict] | None = None,
-                  feedback: str | None = None) -> list[dict]:
+                  feedback: str | None = None, article: str = "") -> list[dict]:
     """plan = tipos de historia en orden (p. ej. ["noticia", "truco", "reel"]). Sin plan (petición con material)
     el guionista decide entre 1 y 3 historias a partir de lo que ha mandado la directora."""
     listing = "\n".join(f"[{i}] {n['title']} — {n['summary'][:300]} ({n['source']}, {n['url']})"
@@ -401,6 +424,8 @@ def write_stories(cfg: dict, plan: list[str] | None, news: list[dict], reel_topi
         ask = ("Escribe entre 1 y 3 historias a partir del material y la petición de la directora "
                "(tipos: truco, dato, pregunta, o noticia si el material es una novedad).")
     mat = f"\nMATERIAL APORTADO POR LA DIRECTORA (fuente principal):\n{materials[:6000]}\n" if materials else ""
+    if article:
+        mat += f"\nTEXTO COMPLETO DE LA NOTICIA [0] (base de las historias de tipo noticia):\n{article[:7000]}\n"
     user = f"""Marca: {cfg['brand']['name']} — {cfg['brand']['about']}
 {positioning(cfg)}
 Audiencia: {cfg['audience']}

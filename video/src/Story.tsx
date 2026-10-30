@@ -2,6 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Audio, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import type {Brand, SfxKit} from './types';
 import {BODY, DISPLAY, clamp, fadeUp, sp} from './anim';
+import {K_BODY, fitSize} from './fit';
 import {FilmFinish} from './components/Layers';
 import {KineticText} from './scenes/Scenes';
 import {Stage} from './three/Stage';
@@ -18,71 +19,118 @@ export type StoryProps = {
   title: string;
   highlight?: string;
   body: string;
+  /** Solo noticias: 2-3 puntos concretos (qué es, quién lo tiene, cuándo) que se ven en una segunda parte. */
+  points?: string[];
+  /** Solo noticias: de dónde sale (p. ej. "Microsoft · Blog de Excel, 28 oct"). */
+  source?: string;
   cta: string;
   music: string;
   sfx: SfxKit | null;
   durationInFrames: number;
+  /** Fotograma en el que empieza la segunda parte (si hay puntos). */
+  splitAt?: number;
 };
 
-// Instagram tapa arriba (barras y nombre de la cuenta, ~230 px) y abajo (caja de respuesta, desde ~1700 px).
-const CTA_AT = 58;
+// Instagram tapa arriba (barras y nombre, ~230 px) y abajo (caja de respuesta, desde ~1700 px).
+const LEFT = 80;
+const WIDTH = 920;
+const TOP = 940;
 
-/** Historia de 7-12 s: misma estética que los Reels para que la cuenta se reconozca de un vistazo. */
+/** Una "página" de la historia: columna que nunca se monta y que siempre cabe antes de la caja de respuesta. */
+const Page: React.FC<{opacity: number; shift: number; children: React.ReactNode}> = ({opacity, shift, children}) => (
+  <div style={{position: 'absolute', left: LEFT, width: WIDTH, top: TOP, display: 'flex', flexDirection: 'column', gap: 28, opacity, transform: `translateY(${shift}px)`}}>
+    {children}
+  </div>
+);
+
+/** Historia de 7-20 s: misma estética que los Reels. Las noticias tienen dos partes para entenderse sin enlace. */
 export const Story: React.FC<StoryProps> = (p) => {
   const f = useCurrentFrame();
   const {width, height, fps, durationInFrames} = useVideoConfig();
+  const brand: Brand = p.brand;
+  const sfx = p.sfx;
   const Hero = HEROES[(p.hero in HEROES ? p.hero : 'ia') as HeroKey];
+  const twoParts = Boolean(p.points?.length) && Boolean(p.splitAt);
+  const split = twoParts ? p.splitAt! : durationInFrames + 100;
+  const out1 = interpolate(f, [split - 8, split], [1, 0], clamp);
+  const in2 = interpolate(f, [split, split + 10], [0, 1], clamp);
+
   const push = interpolate(f, [0, durationInFrames], [13.5, 11.5]);
   const az = 0.25 + Math.sin(f / 90) * 0.12;
-  const titleLen = p.title.length;
-  const size = titleLen <= 22 ? 112 : titleLen <= 38 ? 96 : 84;
-  const bodySize = p.body.length > 110 ? 42 : 46;
-  const cta = sp(f, fps, CTA_AT, 12, 0.6);
-  const brand: Brand = p.brand;
+  const titleSize = fitSize(p.title, WIDTH, 112, 64, 3);
+  const bodySize = fitSize(p.body, WIDTH, 46, 34, 5, K_BODY);
+  const pointSize = Math.min(...(p.points ?? []).map((pt) => fitSize(pt, WIDTH - 130, 46, 34, 2, K_BODY)), 46);
+  const ctaAt = twoParts ? split + 40 : 58;
+  const cta = sp(f, fps, ctaAt, 12, 0.6);
+  const ctaPill = p.cta ? (
+    <div style={{marginTop: 8, display: 'flex', justifyContent: 'center'}}>
+      <div
+        style={{
+          padding: '22px 42px', borderRadius: 999, fontFamily: BODY, fontWeight: 800, fontSize: fitSize(p.cta, 760, 40, 30, 1, K_BODY), color: '#fff',
+          background: `linear-gradient(100deg, ${brand.accentA}, ${brand.accentB})`, boxShadow: `0 0 50px ${brand.accentA}99`,
+          transform: `scale(${0.6 + 0.4 * cta})`, opacity: interpolate(f, [ctaAt, ctaAt + 6], [0, 1], clamp),
+        }}
+      >
+        {p.cta}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <AbsoluteFill style={{background: `radial-gradient(ellipse at 50% 32%, ${brand.accentA}2e 0%, ${brand.bg} 62%)`}}>
       <Stage width={width} height={height} bg={brand.bg} accentA={brand.accentA} accentB={brand.accentB}
         cam={{pos: [Math.sin(az) * push, 2.0, Math.cos(az) * push], target: [0, -0.9, 0], fov: 40}}>
-        <group position={[0, 0.6, 0]} scale={Math.max(0.001, easeOut((f - 14) / 16))}>
-          <Hero t={f} a={brand.accentA} b={brand.accentB} appear={Math.max(0, (f - 14) / 40)} />
+        <group position={[0, 0.6, 0]} scale={Math.max(0.001, easeOut((f - 30) / 16))}>
+          <Hero t={f} a={brand.accentA} b={brand.accentB} appear={Math.max(0, (f - 30) / 40)} />
         </group>
-        <Floaters t={f} a={brand.accentA} b={brand.accentB} appear={Math.max(0, (f - 24) / 30)} />
+        <Floaters t={f} a={brand.accentA} b={brand.accentB} appear={Math.max(0, (f - 36) / 30)} />
       </Stage>
-      <AbsoluteFill style={{background: `linear-gradient(180deg, ${brand.bg}00 0%, ${brand.bg}00 42%, ${brand.bg}b8 60%, ${brand.bg}ee 100%)`}} />
+      <AbsoluteFill style={{background: `linear-gradient(180deg, ${brand.bg}00 0%, ${brand.bg}00 40%, ${brand.bg}c8 56%, ${brand.bg}f2 100%)`}} />
 
-      {/* Título, detalle y remate en una sola columna: el remate va siempre detrás del texto, nunca encima.
-          Todo cabe antes de y=1680, donde empieza la caja de respuesta de Instagram. */}
-      <div style={{position: 'absolute', left: 80, right: 80, top: 940, display: 'flex', flexDirection: 'column', gap: 30}}>
-        <KineticText text={p.title} highlight={p.highlight} size={size} a={brand.accentA} b={brand.accentB} color={brand.text} delay={24} />
-        {p.body && (
-          <div style={{fontFamily: BODY, fontWeight: 600, fontSize: bodySize, lineHeight: 1.3, color: '#c9d1ee', ...fadeUp(f, fps, 40, 30)}}>
-            {p.body}
-          </div>
-        )}
-        {p.cta && (
-        <div style={{marginTop: 10, display: 'flex', justifyContent: 'center'}}>
-          <div
-            style={{
-              padding: '24px 44px', borderRadius: 999, fontFamily: BODY, fontWeight: 800, fontSize: 40, color: '#fff',
-              background: `linear-gradient(100deg, ${brand.accentA}, ${brand.accentB})`, boxShadow: `0 0 50px ${brand.accentA}99`,
-              transform: `scale(${0.6 + 0.4 * cta})`, opacity: interpolate(f, [CTA_AT, CTA_AT + 6], [0, 1], clamp),
-            }}
-          >
-            {p.cta}
-          </div>
-        </div>
-        )}
-      </div>
+      {/* Parte 1: titular y qué ha pasado */}
+      {f < split && (
+        <Page opacity={out1} shift={(1 - out1) * -30}>
+          <KineticText text={p.title} highlight={p.highlight} size={titleSize} a={brand.accentA} b={brand.accentB} color={brand.text} delay={30} />
+          {p.body && (
+            <div style={{fontFamily: BODY, fontWeight: 600, fontSize: bodySize, lineHeight: 1.3, color: '#cdd5f0', ...fadeUp(f, fps, 30 + p.title.split(' ').length * 3 + 8, 30)}}>{p.body}</div>
+          )}
+          {!twoParts && ctaPill}
+        </Page>
+      )}
+
+      {/* Parte 2 (noticias): lo que cambia, en puntos, y la fuente */}
+      {twoParts && f >= split && (
+        <Page opacity={in2} shift={(1 - in2) * 40}>
+          <div style={{fontFamily: BODY, fontWeight: 800, fontSize: 34, letterSpacing: 6, color: brand.accentB}}>LO QUE CAMBIA</div>
+          {(p.points ?? []).slice(0, 3).map((pt, i) => {
+            const s = sp(f, fps, split + 6 + i * 8, 15, 0.7);
+            return (
+              <div key={i} style={{display: 'flex', alignItems: 'center', gap: 24, padding: '22px 30px', borderRadius: 28, background: 'rgba(14,20,44,0.92)', border: '2px solid rgba(255,255,255,0.14)', opacity: Math.min(1, s * 1.5), transform: `translateX(${(1 - s) * 120}px)`}}>
+                <div style={{minWidth: 58, height: 58, borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${brand.accentA}, ${brand.accentB})`, fontFamily: DISPLAY, fontWeight: 700, fontSize: 32, color: '#fff'}}>{i + 1}</div>
+                <div style={{fontFamily: BODY, fontWeight: 700, fontSize: pointSize, lineHeight: 1.22, color: brand.text}}>{pt}</div>
+              </div>
+            );
+          })}
+          {p.source && (
+            <div style={{fontFamily: BODY, fontWeight: 600, fontSize: 30, color: brand.muted, ...fadeUp(f, fps, split + 30, 20)}}>Fuente: {p.source}</div>
+          )}
+          {ctaPill}
+        </Page>
+      )}
 
       <FormatHeader brand={brand} format={p.badge} label={p.label} hideFrom={durationInFrames + 30} />
       <FilmFinish />
 
-      {p.sfx && (
+      {sfx && (
         <>
-          <Audio src={staticFile(p.sfx.whoosh2)} volume={0.5} />
-          <Sequence from={12}><Audio src={staticFile(p.sfx.impact)} volume={0.7} /></Sequence>
-          <Sequence from={24}><Audio src={staticFile(p.sfx.swipe)} volume={0.3} /></Sequence>
-          {p.cta && <Sequence from={CTA_AT + 2}><Audio src={staticFile(p.sfx.pop)} volume={0.5} /></Sequence>}
+          <Audio src={staticFile(sfx.whoosh2)} volume={0.5} />
+          <Sequence from={12}><Audio src={staticFile(sfx.impact)} volume={0.7} /></Sequence>
+          <Sequence from={24}><Audio src={staticFile(sfx.swipe)} volume={0.3} /></Sequence>
+          {twoParts && <Sequence from={split - 4}><Audio src={staticFile(sfx.whoosh1)} volume={0.45} /></Sequence>}
+          {twoParts && (p.points ?? []).slice(0, 3).map((_, i) => (
+            <Sequence key={i} from={split + 8 + i * 8}><Audio src={staticFile(sfx.pop)} volume={0.45} /></Sequence>
+          ))}
+          {p.cta && <Sequence from={ctaAt + 2}><Audio src={staticFile(sfx.pop)} volume={0.5} /></Sequence>}
         </>
       )}
       {p.music && (
@@ -107,11 +155,14 @@ export const storySample: StoryProps = {
   badge: 'noticia',
   label: 'NOTICIA',
   hero: 'excel',
-  title: 'Copilot ya trabaja dentro de Excel',
-  highlight: 'Excel',
-  body: 'Ahora puede crear tablas, fórmulas y gráficos a partir de una petición escrita, sin salir de la hoja.',
-  cta: 'Te lo enseñamos esta semana',
+  title: 'Copilot ya limpia los datos de tus tablas en Excel',
+  highlight: 'limpia',
+  body: 'La actualización de octubre añade a Copilot una función que revisa la tabla y corrige espacios sobrantes y formatos de texto y número que no cuadran.',
+  points: ['Detecta espacios de más y formatos mezclados', 'En Excel para Windows, Mac y web', 'Necesita licencia de Microsoft 365 Copilot'],
+  source: 'Microsoft · Blog de Excel, octubre 2026',
+  cta: '¿Lo probarías en tu equipo?',
   music: '',
   sfx: null,
-  durationInFrames: 270,
+  durationInFrames: 480,
+  splitAt: 230,
 };

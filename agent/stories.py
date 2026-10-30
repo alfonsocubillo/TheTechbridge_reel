@@ -28,9 +28,18 @@ KINDS = {
 }
 
 
-def duration_frames(s: dict) -> int:
-    words = len(f"{s.get('title', '')} {s.get('body', '')} {s.get('cta', '')}".split())
-    return round(min(max(4.5 + words * 0.28, 7.0), 12.0) * FPS)
+def timing(s: dict) -> tuple[int, int | None]:
+    """(duración total, fotograma de la segunda parte). Las noticias tienen dos partes: titular y lo que cambia;
+    cada una dura lo que se tarda en leerla con calma (unas 3 palabras por segundo, más la entrada)."""
+    words1 = len(f"{s.get('title', '')} {s.get('body', '')}".split())
+    part1 = min(max(2.6 + words1 * 0.33, 5.0), 10.0)
+    points = s.get("points") or []
+    if not points:
+        words1 += len(str(s.get("cta", "")).split())
+        return round(min(max(2.6 + words1 * 0.33, 7.0), 12.0) * FPS), None
+    words2 = len(" ".join([*points, str(s.get("source", "")), str(s.get("cta", ""))]).split())
+    part2 = min(max(2.0 + words2 * 0.33, 6.0), 10.0)
+    return round((part1 + part2) * FPS), round(part1 * FPS)
 
 
 def render_stories(cfg: dict, stories: list[dict], reel_format: str | None = None, prefix: str = "story") -> list[dict]:
@@ -44,7 +53,7 @@ def render_stories(cfg: dict, stories: list[dict], reel_format: str | None = Non
         kind = KINDS.get(s.get("kind"), KINDS["truco"])
         fmt = kind["format"] or reel_format or "noticia"
         accent = vis["accents"][int(cfg["formats"].get(fmt, {}).get("accent", 0)) % len(vis["accents"])]
-        dur = duration_frames(s)
+        dur, split = timing(s)
         music = assets.pick_music(run / f"story_music{i}.m4a", dur / FPS)
         props = {
             "brand": {"name": cfg["brand"]["name"], "handle": cfg["brand"]["handle"], "bg": vis["background"],
@@ -52,6 +61,7 @@ def render_stories(cfg: dict, stories: list[dict], reel_format: str | None = Non
             "kind": s.get("kind"), "badge": kind["badge"], "label": kind["label"],
             "hero": hero_for(cfg, s.get("product")),
             "title": s["title"], "highlight": s.get("highlight", ""), "body": s.get("body", ""), "cta": s.get("cta", ""),
+            "points": s.get("points") or [], "source": s.get("source", ""), "splitAt": split,
             "music": f"run/{music.name}", "sfx": sfx or None, "durationInFrames": dur,
         }
         props_file = OUT_DIR / f"{prefix}{i}_props.json"
@@ -59,7 +69,7 @@ def render_stories(cfg: dict, stories: list[dict], reel_format: str | None = Non
         mp4, jpg = OUT_DIR / f"{prefix}{i}.mp4", OUT_DIR / f"{prefix}{i}.jpg"
         remotion("render", "src/index.ts", "Story", str(mp4), f"--props={props_file}", "--codec=h264", "--crf=20",
                  "--audio-codec=aac", f"--concurrency={env('RENDER_CONCURRENCY', '4')}")
-        remotion("still", "src/index.ts", "Story", str(jpg), f"--props={props_file}", f"--frame={dur - 15}",
+        remotion("still", "src/index.ts", "Story", str(jpg), f"--props={props_file}", f"--frame={(split - 12) if split else dur - 15}",  # miniatura: el titular
                  "--image-format=jpeg", "--jpeg-quality=85", "--scale=0.34")
         log.info("Historia %d lista: %s — %s", i, kind["label"], s["title"])
         done.append({**s, "label": kind["label"], "file": mp4.name, "thumb": jpg.name})
@@ -94,6 +104,7 @@ def _entries(stories: list[dict], times: list[str], day: date, tag: str, prefix_
         "id": f"{prefix_id}-{i}", "day": day.isoformat(), "at": t, "status": "scheduled", "origin": origin,
         "kind": s.get("kind"), "label": s["label"], "title": s["title"], "body": s.get("body", ""),
         "tag": tag, "file": s["file"], "thumb": s["thumb"], "source_url": s.get("source_url"),
+        "source": s.get("source"),
     } for i, (s, t) in enumerate(zip(stories, times))]
 
 
@@ -105,10 +116,17 @@ def daily(cfg: dict, meta: dict, item: dict, now: datetime) -> list[dict]:
     history = load_history()
     used = {h.get("source_url") for h in history if h.get("source_url")} | {meta.get("source_url")}
     items = news.relevant(news.recent_news(cfg["sources"], used, days=4), cfg.get("products", []))
-    plan = ["noticia" if items else "dato", "truco", "reel" if now.toordinal() % 2 == 0 else "pregunta"]
+    recent = [h.get("topic", "") for h in history]
+    # La noticia de la historia se elige aparte (nunca la del Reel) y se escribe a partir del artículo completo
+    pick = writer.pick_story(cfg, "noticia", items, recent + [meta.get("topic", "")]) if items else None
+    article = news.fetch_article_text(pick["url"], limit=8000) if pick else ""
+    plan = ["noticia" if pick else "dato", "truco", "reel" if now.toordinal() % 2 == 0 else "pregunta"]
     plan = (plan + ["dato", "truco", "pregunta"])[:n]
-    stories = writer.write_stories(cfg, plan, items, reel_topic=meta.get("topic"),
-                                   recent_titles=[h.get("topic", "") for h in history])
+    stories = writer.write_stories(cfg, plan, [pick] if pick else [], reel_topic=meta.get("topic"),
+                                   recent_titles=recent, article=article)
+    for st in stories:
+        if pick and st.get("kind") in {"noticia", "ultima_hora"}:
+            st["source_url"] = pick["url"]
     rendered = render_stories(cfg, stories, reel_format=meta.get("format"))
     times = schedule(cfg, now.date(), len(rendered), earliest=now)  # si se genera tarde, nunca horas ya pasadas
     return _entries(rendered, times, now.date(), item["tag"], item["id"], "nightly")
@@ -123,9 +141,10 @@ def next_slot_day(cfg: dict, now: datetime, needed_minutes: int = 90) -> tuple[d
 
 
 DEMO = [
-    {"kind": "noticia", "product": "Excel", "title": "Copilot ya trabaja dentro de Excel", "highlight": "Excel",
-     "body": "Crea tablas, fórmulas y gráficos a partir de una petición escrita, sin salir de la hoja.",
-     "cta": "¿Lo has probado ya?"},
+    {"kind": "noticia", "product": "Excel", "title": "Copilot ya limpia los datos de tus tablas en Excel", "highlight": "limpia",
+     "body": "La actualización de octubre añade a Copilot una función que revisa la tabla y corrige espacios y formatos que no cuadran.",
+     "points": ["Detecta espacios de más y formatos mezclados", "En Excel para Windows, Mac y web", "Llega con la actualización de octubre"],
+     "source": "Microsoft · Blog de Excel, octubre", "cta": "¿Lo probarías en tu equipo?"},
     {"kind": "pregunta", "product": "Teams", "title": "¿Cuántas reuniones tienes hoy?", "highlight": "reuniones",
      "body": "Cuéntanos por mensaje cómo organizas la semana en Teams.", "cta": "Respóndenos por mensaje"},
 ]
