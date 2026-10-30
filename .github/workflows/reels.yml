@@ -19,6 +19,10 @@ on:
         type: choice
         options: ["", "news", "request"]
         default: ""
+      ignore_quiet:
+        description: "Usar Claude aunque sea la franja protegida (04:00-14:00). Solo para lanzarlo a mano."
+        type: boolean
+        default: false
 
 concurrency:
   group: reels
@@ -45,6 +49,8 @@ env:
   # Instagram apagado hasta que la variable INSTAGRAM_PUBLISH valga "true" (Settings → Variables).
   # Mientras tanto, al aprobar un vídeo llega un correo con el vídeo, la portada y el texto.
   INSTAGRAM_PUBLISH: ${{ vars.INSTAGRAM_PUBLISH || 'false' }}
+  # Solo si se lanza a mano marcando "ignore_quiet"; las ejecuciones automáticas respetan siempre la franja
+  CLAUDE_IGNORE_QUIET: ${{ inputs.ignore_quiet && '1' || '' }}
   GH_TOKEN: ${{ github.token }}
 
 jobs:
