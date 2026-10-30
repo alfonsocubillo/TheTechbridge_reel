@@ -1,72 +1,76 @@
 {
   "item": {
-    "date": "2026-10-30T09:03:39+00:00",
+    "date": "2026-10-30T12:55:03+00:00",
     "format": "noticia",
     "format_label": "NOTICIA",
-    "topic": "Copilot en Excel limpia datos sucios",
+    "topic": "Copilot en Excel ya limpia datos",
     "source_url": "https://techcommunity.microsoft.com/t5/excel-blog/what-s-new-in-excel-october-2026/ba-p/4549758",
     "source_name": "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=ExcelBlog",
-    "caption": "Tu tabla dinámica no está mal hecha. Probablemente tus datos estén sucios y no lo sabes.\n\nEn la actualización de octubre de 2026, Copilot en Excel incorpora una habilidad para limpiar datos. Revisa la tabla y detecta problemas como espacios sobrantes o formatos de texto y número incoherentes. Está disponible en Excel para Windows, Mac y web.\n\n¿Por qué importa? Porque esos fallos afectan a fórmulas, búsquedas, tablas dinámicas, informes y también a los análisis que hace la propia IA. Si el dato de partida está mal, la conclusión también.\n\nPara probarlo hoy:\n1. Abre tu tabla en Excel y abre Copilot.\n2. Escribe: \"Revisa esta tabla y limpia los datos: espacios sobrantes y formatos de texto y número incoherentes.\"\n3. Revisa las correcciones antes de aplicarlas.\n\nCompártelo con quien prepara cada mes el informe de ventas.\n\n¿Cuánto tiempo pierde tu equipo limpiando datos antes de cada informe?\n\nFuente: Microsoft Tech Community (Excel Blog)\n\nCada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution\n\n#TheTechBridgeSolution #Excel #CopilotEnExcel #limpiezadedatos #productividad",
-    "cover_title": "Copilot limpia tus datos en Excel",
+    "caption": "La mitad de los errores de un informe no están en la fórmula, sino en los datos que la alimentan.\n\nMicrosoft ha anunciado en la actualización de octubre de Excel una nueva habilidad de Copilot: limpiar datos. Está disponible en Excel para Windows, Mac y web.\n\nCopilot en Excel revisa los datos y detecta problemas como espacios de más, textos escritos de forma inconsistente o números con formatos mezclados. Son justo los fallos que rompen un BUSCARV, descuadran una tabla dinámica o hacen que un informe no cuadre con otro.\n\nIdea práctica: antes de cruzar dos listados (clientes, proveedores, facturas), pasa la limpieza de datos con Copilot. Te ahorras descubrir el problema cuando el informe ya está en manos de dirección.\n\nEs una de las cinco capacidades nuevas de Copilot en Excel este mes.\n\nCompártelo con quien cuadra los informes a final de mes.\n\n¿Cuál es el error de datos que más tiempo te hace perder en Excel?\n\nFuente: Microsoft Tech Community (Excel Blog)\n\nCada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution\n\n#TheTechBridgeSolution #Excel #Copilot #productividad #analisisdedatos",
+    "cover_title": "Copilot ya limpia tus datos",
     "product": "Excel",
     "stock_ids": [
-      "pixabay:28860"
+      "pixabay:199545",
+      "pixabay:227567",
+      "pixabay:2176"
     ],
     "voice": false,
-    "id": "1030-1003",
-    "tag": "reel-20261030-1003",
+    "id": "1030-1355",
+    "tag": "reel-20261030-1355",
     "day": "2026-10-30",
     "kind": "nightly",
     "attempt": 1,
-    "status": "emailed",
-    "private": null,
-    "emailed_at": "2026-10-30T10:10+01:00"
+    "status": "generated",
+    "private": null
   },
   "stories": [
     {
-      "id": "1030-1003-0",
+      "id": "1030-1355-0",
       "day": "2026-10-30",
-      "at": "11:07",
+      "at": "14:52",
       "status": "scheduled",
       "origin": "nightly",
       "kind": "noticia",
       "label": "NOTICIA",
-      "title": "PowerPoint Live estrena modo oscuro y notas",
-      "body": "Al presentar en Teams eliges tema claro, oscuro o alto contraste, pasas diapositivas con las flechas y amplías el panel de notas.",
-      "tag": "reel-20261030-1003",
+      "title": "SharePoint renueva su app móvil con nuevo diseño",
+      "body": "La app rediseñada reúne en un solo sitio tus sitios de equipo, archivos, noticias internas y compañeros, para trabajar cuando no estás en la mesa.",
+      "tag": "reel-20261030-1355",
       "file": "story0.mp4",
       "thumb": "story0.jpg",
-      "source_url": null
+      "source_url": "https://techcommunity.microsoft.com/t5/microsoft-sharepoint-blog/sharepoint-showcase-refreshed-sharepoint-mobile-app/ba-p/4535415",
+      "source": "Microsoft · Blog de SharePoint"
     },
     {
-      "id": "1030-1003-1",
+      "id": "1030-1355-1",
       "day": "2026-10-30",
-      "at": "15:58",
+      "at": "18:26",
       "status": "scheduled",
       "origin": "nightly",
       "kind": "truco",
       "label": "TRUCO RÁPIDO",
-      "title": "Ctrl+E limpia columnas en Excel sin fórmulas",
-      "body": "Escribe el resultado que quieres en la primera fila y pulsa Ctrl+E. El Relleno rápido completa el resto siguiendo tu patrón.",
-      "tag": "reel-20261030-1003",
+      "title": "Ctrl+E separa nombres y apellidos sin fórmulas",
+      "body": "Escribe en la columna de al lado el primer resultado que quieres, por ejemplo solo el nombre, y pulsa Ctrl+E. Excel completa el resto siguiendo el patrón.",
+      "tag": "reel-20261030-1355",
       "file": "story1.mp4",
       "thumb": "story1.jpg",
-      "source_url": null
+      "source_url": null,
+      "source": null
     },
     {
-      "id": "1030-1003-2",
+      "id": "1030-1355-2",
       "day": "2026-10-30",
-      "at": "18:46",
+      "at": "20:43",
       "status": "scheduled",
       "origin": "nightly",
       "kind": "pregunta",
       "label": "PREGUNTA",
-      "title": "¿Usas ya Copilot en tus Excel?",
-      "body": "Para limpiar datos, resumir tablas o crear fórmulas. Cuéntame si lo usas a diario, a veces o todavía no.",
-      "tag": "reel-20261030-1003",
+      "title": "¿Usáis ya Copilot para limpiar datos en Excel?",
+      "body": "Duplicados, espacios de más, formatos mezclados. Queremos saber si en vuestro equipo esto sigue siendo trabajo manual o ya lo resuelve Copilot.",
+      "tag": "reel-20261030-1355",
       "file": "story2.mp4",
       "thumb": "story2.jpg",
-      "source_url": null
+      "source_url": null,
+      "source": null
     }
   ]
 }
