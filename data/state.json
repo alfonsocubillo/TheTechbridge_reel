@@ -79,7 +79,7 @@
       "id": "news10301532-0",
       "day": "2026-10-30",
       "at": "16:18",
-      "status": "scheduled",
+      "status": "published",
       "origin": "news",
       "kind": "ultima_hora",
       "label": "ÚLTIMA HORA",
@@ -89,7 +89,9 @@
       "file": "news1532_0.mp4",
       "thumb": "news1532_0.jpg",
       "source_url": "https://blogs.microsoft.com/blog/2026/10/28/introducing-the-microsoft-copilot-harness-unlocking-the-potential-of-truly-multi-model-agentic-work/",
-      "source": "Microsoft · Blog oficial, 28 oct"
+      "source": "Microsoft · Blog oficial, 28 oct",
+      "media_id": "18347157499248978",
+      "published_at": "2026-10-30T18:58+01:00"
     }
   ],
   "news_check_day": "2026-10-30"
