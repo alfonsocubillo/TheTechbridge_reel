@@ -42,6 +42,7 @@ env:
   ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
   ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
   IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+  IG_USER_ID: ${{ secrets.IG_USER_ID }}
   MAIL_USER: ${{ secrets.MAIL_USER }}
   MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
   BOSS_EMAIL: ${{ secrets.BOSS_EMAIL }}

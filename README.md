@@ -50,6 +50,12 @@ La cuenta de Instagram ya es profesional y **no hace falta vincularla a una pág
    Si da error al añadirla, ve a **Roles de la app → Roles → Añadir personas → Tester de Instagram** y escribe la cuenta de TechBridge. Después acepta la invitación desde Instagram en **Configuración → Apps y sitios web → Invitaciones de tester** y vuelve a intentarlo.
 6. Pulsa **Generar identificador** y copia el token. Es tu `IG_ACCESS_TOKEN` y dura 60 días; el workflow `refresh-token` lo renueva solo cada mes.
 
+**Alternativa con inicio de sesión de Facebook** (token que empieza por `EAA`). También vale, con dos condiciones:
+- La cuenta de Instagram tiene que estar **vinculada a una página de Facebook**. Se hace desde Instagram en **Configuración → Centro de cuentas**, o desde la página en **Configuración → Cuentas vinculadas**.
+- Al generar el token en el [Explorador de la API Graph](https://developers.facebook.com/tools/explorer/), hay que **marcar esa página** cuando Facebook pregunte a qué páginas dar acceso. Los permisos son `pages_show_list`, `instagram_basic`, `instagram_content_publish` y `pages_read_engagement`.
+
+Ese token caduca en una o dos horas. Pásalo por el [depurador de tokens](https://developers.facebook.com/tools/debug/accesstoken/) y pulsa **Ampliar token de acceso** para que dure 60 días. Con él se saca el token de la página, que no caduca: ese es el que va en `IG_ACCESS_TOKEN`, y el id de la cuenta de Instagram en `IG_USER_ID`.
+
 > La app puede quedarse en modo desarrollo: para publicar en tu propia cuenta no necesitas pasar la revisión de Meta.
 
 ### 2. Claves de los servicios
@@ -112,7 +118,7 @@ le dé el aviso cada 10 minutos:
 El horario interno de GitHub se queda como respaldo por si el servicio externo fallara.
 
 ### Activar Instagram
-1. Consigue el token del paso 1 y guárdalo como secreto `IG_ACCESS_TOKEN`. Para el renovado automático, añade también `GH_PAT`.
+1. Consigue el token del paso 1 y guárdalo como secreto `IG_ACCESS_TOKEN`. Si es de Instagram (`IGAA`), añade también `GH_PAT` para el renovado automático. Si es el token de página de Facebook (`EAA`), no caduca y no hace falta.
 2. Activa **Settings → Pages** → Source: **GitHub Actions**.
 3. En **Settings → Secrets and variables → Actions → Variables**, pon `INSTAGRAM_PUBLISH` a `true`.
 
