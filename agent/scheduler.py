@@ -420,6 +420,12 @@ def cmd_tick(args) -> None:
     if action == "publish" and not instagram_on():
         finish_without_instagram(cfg, state)
         action = "none"
+    if action == "story" and args.force and not due_story(state, now):
+        # Forzar una historia = publicar ya la siguiente de hoy, sin esperar a su hora
+        nxt = next((x for x in todays_stories(state, now) if x["status"] == "scheduled"), None)
+        if nxt:
+            log.info("Adelanto la historia de las %s (%s) a ahora", nxt["at"], nxt["title"])
+            nxt["at"] = now.strftime("%H:%M")
     if action == "story" and not instagram_on():
         st = due_story(state, now)
         if st:
