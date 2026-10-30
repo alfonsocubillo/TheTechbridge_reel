@@ -1,27 +1,71 @@
 {
   "item": {
-    "date": "2026-10-30T01:29:20+00:00",
+    "date": "2026-10-30T09:03:39+00:00",
     "format": "noticia",
-    "format_label": "ACABA DE SALIR",
-    "topic": "Microsoft ofrece salida voluntaria a 60.000 empleados",
-    "source_url": "https://www.theverge.com/tech/1022023/microsoft-exit-offer-layoffs-notepad",
-    "source_name": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
-    "caption": "Una de las empresas que más IA vende acaba de decidir que necesita menos gente. Y no lo esconde.\n\nMicrosoft ha ofrecido una salida voluntaria a unos 60.000 empleados en Estados Unidos, Reino Unido, Canadá e India, casi un cuarto de su plantilla. Llega meses después de despedir a 4.800 personas, y su plantilla ha bajado por primera vez en diez años: de 228.000 a unos 223.000.\n\nEl motivo es explícito: reducir costes de personal para seguir invirtiendo en infraestructura de IA. Satya Nadella lo resumió así: menos coste total en personas, más coste por persona y más potencia de IA para quien se queda.\n\nSi diriges un equipo, la idea práctica es esta: revisa qué tareas repetitivas hace hoy tu gente (informes, actas, resúmenes de correo) y pregúntate cuáles podría asumir Copilot o ChatGPT. No para recortar, sino para que cada persona dedique su tiempo a lo que realmente aporta.\n\nCompártelo con quien está planificando el equipo del año que viene.\n\n¿En tu empresa la IA se está viendo como herramienta o como sustituto?\n\nFuente: The Verge\n\nCada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution\n\n#TheTechBridgeSolution #Microsoft #inteligenciaartificial #empleo #liderazgo",
-    "cover_title": "Microsoft quiere menos empleados",
+    "format_label": "NOTICIA",
+    "topic": "Copilot en Excel limpia datos sucios",
+    "source_url": "https://techcommunity.microsoft.com/t5/excel-blog/what-s-new-in-excel-october-2026/ba-p/4549758",
+    "source_name": "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=ExcelBlog",
+    "caption": "Tu tabla dinámica no está mal hecha. Probablemente tus datos estén sucios y no lo sabes.\n\nEn la actualización de octubre de 2026, Copilot en Excel incorpora una habilidad para limpiar datos. Revisa la tabla y detecta problemas como espacios sobrantes o formatos de texto y número incoherentes. Está disponible en Excel para Windows, Mac y web.\n\n¿Por qué importa? Porque esos fallos afectan a fórmulas, búsquedas, tablas dinámicas, informes y también a los análisis que hace la propia IA. Si el dato de partida está mal, la conclusión también.\n\nPara probarlo hoy:\n1. Abre tu tabla en Excel y abre Copilot.\n2. Escribe: \"Revisa esta tabla y limpia los datos: espacios sobrantes y formatos de texto y número incoherentes.\"\n3. Revisa las correcciones antes de aplicarlas.\n\nCompártelo con quien prepara cada mes el informe de ventas.\n\n¿Cuánto tiempo pierde tu equipo limpiando datos antes de cada informe?\n\nFuente: Microsoft Tech Community (Excel Blog)\n\nCada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution\n\n#TheTechBridgeSolution #Excel #CopilotEnExcel #limpiezadedatos #productividad",
+    "cover_title": "Copilot limpia tus datos en Excel",
+    "product": "Excel",
     "stock_ids": [
-      "pixabay:257777",
-      "pixabay:256056",
-      "pixabay:14088"
+      "pixabay:28860"
     ],
     "voice": false,
-    "id": "1030-0229",
-    "tag": "reel-20261030-0229",
+    "id": "1030-1003",
+    "tag": "reel-20261030-1003",
     "day": "2026-10-30",
     "kind": "nightly",
     "attempt": 1,
-    "status": "discarded",
-    "private": null,
-    "discarded_reason": "Generado con la versión anterior (tema corporativo); se sustituye por uno del nuevo diseño"
+    "status": "generated",
+    "private": null
   },
-  "stories": []
+  "stories": [
+    {
+      "id": "1030-1003-0",
+      "day": "2026-10-30",
+      "at": "11:07",
+      "status": "scheduled",
+      "origin": "nightly",
+      "kind": "noticia",
+      "label": "NOTICIA",
+      "title": "PowerPoint Live estrena modo oscuro y notas",
+      "body": "Al presentar en Teams eliges tema claro, oscuro o alto contraste, pasas diapositivas con las flechas y amplías el panel de notas.",
+      "tag": "reel-20261030-1003",
+      "file": "story0.mp4",
+      "thumb": "story0.jpg",
+      "source_url": null
+    },
+    {
+      "id": "1030-1003-1",
+      "day": "2026-10-30",
+      "at": "15:58",
+      "status": "scheduled",
+      "origin": "nightly",
+      "kind": "truco",
+      "label": "TRUCO RÁPIDO",
+      "title": "Ctrl+E limpia columnas en Excel sin fórmulas",
+      "body": "Escribe el resultado que quieres en la primera fila y pulsa Ctrl+E. El Relleno rápido completa el resto siguiendo tu patrón.",
+      "tag": "reel-20261030-1003",
+      "file": "story1.mp4",
+      "thumb": "story1.jpg",
+      "source_url": null
+    },
+    {
+      "id": "1030-1003-2",
+      "day": "2026-10-30",
+      "at": "18:46",
+      "status": "scheduled",
+      "origin": "nightly",
+      "kind": "pregunta",
+      "label": "PREGUNTA",
+      "title": "¿Usas ya Copilot en tus Excel?",
+      "body": "Para limpiar datos, resumir tablas o crear fórmulas. Cuéntame si lo usas a diario, a veces o todavía no.",
+      "tag": "reel-20261030-1003",
+      "file": "story2.mp4",
+      "thumb": "story2.jpg",
+      "source_url": null
+    }
+  ]
 }
