@@ -7,3 +7,5 @@ __pycache__/
 .env
 .venv/
 .claude/
+TheTechBridge_Instagram/
+video/public/lib/

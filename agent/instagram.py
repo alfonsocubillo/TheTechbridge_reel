@@ -12,7 +12,17 @@ import time
 
 import requests
 
-from .common import env, log
+from .common import env, load_config, log
+
+
+def enabled() -> bool:
+    """Interruptor maestro (config/brand.yaml → instagram.enabled). Apagado, no sale nada hacia Instagram."""
+    return bool((load_config().get("instagram") or {}).get("enabled", False))
+
+
+def _guard(what: str) -> None:
+    if not enabled():
+        raise RuntimeError(f"Instagram está desactivado (config/brand.yaml → instagram.enabled): no se publica {what}")
 
 
 def is_facebook(token: str) -> bool:
@@ -81,6 +91,7 @@ def _wait(token: str, container: str, what: str) -> None:
 
 
 def publish_reel(video_url: str, caption: str, cover_url: str | None = None, thumb_offset_ms: int = 1500) -> str:
+    _guard("el Reel")
     token = env("IG_ACCESS_TOKEN", required=True)
     me = account(token)
     uid = me["user_id"]
@@ -115,6 +126,7 @@ def publish_reel(video_url: str, caption: str, cover_url: str | None = None, thu
 
 def publish_story(video_url: str) -> str:
     """Publica una historia de vídeo (9:16). Devuelve el id de la publicación."""
+    _guard("la historia")
     token = env("IG_ACCESS_TOKEN", required=True)
     uid = account(token)["user_id"]
     container = _post(token, f"{uid}/media", media_type="STORIES", video_url=video_url)["id"]

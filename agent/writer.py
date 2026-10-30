@@ -25,6 +25,11 @@ def _claude_bin(install: bool = True) -> str | None:
         return found
     if LOCAL_BIN.exists():
         return str(LOCAL_BIN)
+    # En local también vale el que trae la extensión de VS Code (el de la versión más reciente)
+    bundled = sorted(Path.home().glob(".vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude*"),
+                     key=lambda p: [int(x) for x in re.findall(r"\d+", p.parts[-4])])
+    if bundled:
+        return str(bundled[-1])
     if install and env("GITHUB_ACTIONS"):
         log.info("Instalando Claude Code...")
         subprocess.run("curl -fsSL https://claude.ai/install.sh | bash", shell=True, check=True)

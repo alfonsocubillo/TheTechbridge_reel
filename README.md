@@ -9,7 +9,33 @@ Cada día, sin que nadie toque nada:
 5. **Prepara la publicación.** Cada vídeo lleva una portada con la misma plantilla que los anteriores (el color depende del formato, así el perfil queda ordenado) y una descripción con gancho, pasos prácticos, llamada a guardar o compartir, pregunta final, firma de la marca y 5 hashtags.
 6. **Pide aprobación por email** y solo publica el Reel que la directora aprueba. Las historias salen solas, pero las ve en el correo y puede cancelarlas.
 
-> **Instagram conectado** a @thetechbridgesolution. El token hay que renovarlo antes del **29 de diciembre de 2026**: mira [Renovar el token de Instagram](#renovar-el-token-de-instagram-antes-del-29-de-diciembre-de-2026). Si se apaga la variable `INSTAGRAM_PUBLISH`, al aprobar un vídeo llega un correo con el vídeo, la portada y el texto para subirlo a mano.
+> **✅ Instagram activo** (reactivado el 30/10/2026). Tres interruptores tienen que estar encendidos para publicar:
+> `config/brand.yaml → instagram.enabled: true`, la variable de GitHub `INSTAGRAM_PUBLISH=true` y el workflow «Reels con aprobación»
+> activo. Para pausar la publicación basta con apagar cualquiera de ellos (lo más rápido: `gh variable set INSTAGRAM_PUBLISH --body false`).
+> El token de Instagram hay que renovarlo antes del **29 de diciembre de 2026**.
+
+## Estudio local (`python -m studio`)
+
+Todo se genera y se guarda en `TheTechBridge_Instagram/` (fuera de git) para revisarlo antes de publicar nada.
+
+| Comando | Qué hace |
+|---|---|
+| `python -m studio ejemplos` | Renderiza la colección de ejemplos de todos los modelos (`studio/ejemplos.py`). |
+| `python -m studio generar` | El equipo editorial (Claude, con la suscripción y fuera de la franja 04:00-14:00) investiga noticias, elige 3 historias y 1 publicación, asigna modelo, escribe y renderiza. |
+| `python -m studio revisar` | Abre la galería en el navegador con botones ✅ Aprobar / 🗑️ Descartar. |
+| `python -m studio estado <id> aprobado` | Cambia el estado de una pieza desde la terminal. |
+| `python -m studio informe` | Informe de variedad: modelos, categorías, familias y músicas que se repiten o faltan. |
+| `python -m studio programar --hora 22:30` | Tarea diaria de Windows que ejecuta `generar` (`--quitar` la elimina). |
+
+**Dos canales que no se mezclan** (`studio/catalog.py`):
+
+- **Historias**: vídeo *Actual 3D* (el de siempre), *Pulso* (nuevo: tipografía cinética a ritmo), *Terminal* y *Quiz*; fotos *Titular*, *¿Sabías que?*, *Atajo*, *Prompt exprés*, *Mito o realidad* y *Herramienta*. Cada una con su propia estética.
+- **Publicaciones**: Reels *Cinemático 3D*, *Documental claro* y *Versus*; carruseles *Guía numerada* (la referencia), *Explicador*, *Comparativa* y *Análisis*.
+- **Portadas**: un solo sistema (`video/src/studio/feed/FeedCover.tsx`) con 6 familias de color (noticia, tutorial, comparativa, análisis, prompting, curiosidad) y 3 composiciones. `Portadas/Vista_Perfil.jpg` simula la cuadrícula del perfil.
+
+**Sonido**: 31 pistas (`assets/music/catalogo.json`): HoliznaCC0 (CC0) y 8 propias compuestas por código (`tools/make_music.py`), clasificadas por estado de ánimo. Cada contenido elige su ánimo y se evita repetir las últimas pistas. 28 efectos CC0 (`tools/make_sfx_extra.py` añade interfaz, glitch, escáner, teclado, cuenta atrás…).
+
+**Memoria editorial**: `TheTechBridge_Instagram/_sistema/memoria.json` guarda cada pieza (canal, modelo, familia, categoría, tema, música, estado). Se usa para rotar modelos, equilibrar categorías, no repetir música y no contar lo mismo en historias y publicaciones. Las ideas nuevas que propone el equipo editorial quedan en `_sistema/ideas.md`.
 
 ## El día a día (horario de Madrid)
 

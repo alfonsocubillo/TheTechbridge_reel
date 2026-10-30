@@ -110,6 +110,26 @@ sources:
   - "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
   - "https://feeds.weblogssl.com/xataka2"
 
+# Interruptor maestro de Instagram. Mientras `enabled` sea false NO se sube nada (ni Reels ni historias),
+# valga lo que valga la variable INSTAGRAM_PUBLISH de GitHub. Fase actual: todo se genera y se revisa en local
+# (python -m studio). Solo se vuelve a poner a true cuando el responsable lo autorice expresamente.
+instagram:
+  enabled: true
+
+# Estudio local (python -m studio): genera historias, Reels, carruseles y portadas en una carpeta para revisarlos.
+studio:
+  output_dir: "TheTechBridge_Instagram"   # relativa al proyecto (o una ruta absoluta)
+  stories_per_day: 3
+  posts_per_day: 1
+  news_days: 3
+  # Fuentes adicionales para salir del ecosistema Microsoft: programación, ciberseguridad, tecnología en general
+  extra_sources:
+    - "https://github.blog/feed/"
+    - "https://www.bleepingcomputer.com/feed/"
+    - "https://feeds.arstechnica.com/arstechnica/technology-lab"
+    - "https://www.genbeta.com/feedburner.xml"
+    - "https://www.microsoft.com/en-us/security/blog/feed/"
+
 # Revisión por email antes de publicar (horas en hora de Madrid)
 review:
   timezone: "Europe/Madrid"

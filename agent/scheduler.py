@@ -45,7 +45,7 @@ def save_state(state: dict) -> None:
 
 
 def instagram_on() -> bool:
-    return (env("INSTAGRAM_PUBLISH") or "").strip().lower() in {"1", "true", "si", "sí", "yes"}
+    return instagram.enabled() and (env("INSTAGRAM_PUBLISH") or "").strip().lower() in {"1", "true", "si", "sí", "yes"}
 
 
 def private(item: dict | None) -> dict:

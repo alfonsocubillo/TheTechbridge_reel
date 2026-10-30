@@ -5,6 +5,7 @@ import {Lab} from './Lab';
 import {Story, storySample} from './Story';
 import {Reel} from './Reel';
 import type {ReelProps} from './types';
+import {StudioCompositions} from './studio/Compositions';
 
 // Props de ejemplo para previsualizar en Remotion Studio (npm run studio)
 const sample: ReelProps = {
@@ -57,5 +58,6 @@ export const RemotionRoot: React.FC = () => (
     defaultProps={storySample} calculateMetadata={({props}) => ({durationInFrames: Math.max(props.durationInFrames, 90)})} />
   <Composition id="Lab" component={Lab} width={1080} height={1920} fps={30} durationInFrames={120}
     defaultProps={{hero: 'ia' as const, accentA: '#3B82F6', accentB: '#22D3EE', bg: '#070B18'}} />
+  <StudioCompositions />
   </>
 );
