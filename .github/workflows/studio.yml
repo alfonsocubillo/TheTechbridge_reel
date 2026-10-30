@@ -1,0 +1,39 @@
+name: Estudio de contenido (catálogo)
+
+# Renderiza en la nube la biblioteca de ejemplos de todos los modelos y el catálogo completo de variantes
+# (python -m studio ejemplos + catalogo). No publica nada: el resultado se descarga como artefacto ZIP
+# con Galeria.html y Catalogo_Completo/Catalogo.html dentro.
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      RENDER_GL: swangle
+      RENDER_CONCURRENCY: "4"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-color-emoji > /dev/null
+          pip install -q -r requirements.txt
+          cd video && npm install --no-audit --no-fund && npx remotion browser ensure
+      - name: Ejemplos de todos los modelos
+        run: python -m studio ejemplos
+      - name: Catálogo completo de variantes
+        run: python -m studio catalogo
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: biblioteca-instagram
+          path: TheTechBridge_Instagram
+          retention-days: 30
