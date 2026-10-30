@@ -40,13 +40,24 @@ export type Brand = {
 
 export type CaptionWord = {word: string; start: number; end: number};
 
+/** Kit de sonido: rutas dentro de public/ (todas CC0 o generadas por nosotros). */
+export type SfxKit = Record<
+  'whoosh1' | 'whoosh2' | 'whoosh3' | 'impact' | 'riser' | 'shimmer' | 'pop' | 'tick' | 'ding' | 'type' | 'swipe',
+  string
+>;
+
 export type ReelProps = {
   brand: Brand;
+  formatKey: string;
   formatLabel: string;
+  /** Objeto 3D protagonista según el producto del vídeo (ia, excel, correo, reuniones...). */
+  hero: string;
+  /** Frase fija de la marca en el cierre (impresión de "esto lo enseñan ellos", sin vender). */
+  tagline: string;
   audioMode: 'voice' | 'music';
   music: string;
   musicVolume: number;
-  sfx: {whoosh: string; hit: string} | null;
+  sfx: SfxKit | null;
   scenes: Scene[];
   captions: CaptionWord[];
   durationInFrames: number;
@@ -56,7 +67,9 @@ export type SceneProps = {scene: Scene; brand: Brand; dur: number; formatLabel: 
 
 export type CoverProps = {
   brand: Brand;
+  formatKey: string;
   formatLabel: string;
+  hero: string;
   title: string;
   highlight?: string;
 };

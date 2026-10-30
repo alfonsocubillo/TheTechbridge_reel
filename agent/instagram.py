@@ -76,3 +76,26 @@ def refresh_token(token: str) -> str:
     data = _check(requests.get("https://graph.instagram.com/refresh_access_token",
                                params={"grant_type": "ig_refresh_token", "access_token": token}, timeout=30))
     return data["access_token"]
+
+
+def publish_story(video_url: str) -> str:
+    """Publica una historia de vídeo (9:16). Devuelve el id de la publicación."""
+    token = env("IG_ACCESS_TOKEN", required=True)
+    uid = account(token)["user_id"]
+    container = _check(requests.post(f"{_base()}/{uid}/media", data={
+        "media_type": "STORIES", "video_url": video_url, "access_token": token,
+    }, timeout=60))["id"]
+    for _ in range(60):
+        st = _check(requests.get(f"{_base()}/{container}",
+                                 params={"fields": "status_code,status", "access_token": token}, timeout=30))
+        if st.get("status_code") == "FINISHED":
+            break
+        if st.get("status_code") in {"ERROR", "EXPIRED"}:
+            raise RuntimeError(f"Instagram rechazó la historia: {st}")
+        time.sleep(10)
+    else:
+        raise RuntimeError("Instagram tardó demasiado en procesar la historia")
+    media_id = _check(requests.post(f"{_base()}/{uid}/media_publish",
+                                    data={"creation_id": container, "access_token": token}, timeout=60))["id"]
+    log.info("Historia publicada: %s", media_id)
+    return media_id

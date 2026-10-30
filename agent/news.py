@@ -89,3 +89,11 @@ def recent_news(sources: list[str], used_urls: set[str], days: int = 10) -> list
         found.extend(fresh[:8])
     found.sort(key=lambda i: i["date"] or cutoff, reverse=True)
     return found
+
+
+def relevant(items: list[dict], products: list[dict]) -> list[dict]:
+    """Solo las noticias que mencionan alguno de los productos de la marca (config → products)."""
+    pats = [re.compile(r"(?<![\w-])" + re.escape(k.lower()), re.I) for p in products for k in p.get("keywords", [])]
+    keep = [i for i in items if any(p.search(f"{i['title']} {i['summary']}") for p in pats)]
+    log.info("Noticias sobre los productos: %d de %d", len(keep), len(items))
+    return keep

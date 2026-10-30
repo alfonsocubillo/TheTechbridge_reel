@@ -159,13 +159,24 @@ def pick_music(dest: Path, seconds: float) -> Path:
     return dest
 
 
+SFX_DIR = ROOT / "assets" / "sfx"
+SFX_KEYS = ("whoosh1", "whoosh2", "whoosh3", "impact", "riser", "shimmer", "pop", "tick", "ding", "type", "swipe")
+
+
 def make_sfx(run: Path) -> dict:
-    whoosh, hit = run / "whoosh.wav", run / "hit.wav"
-    ff("-f", "lavfi", "-i", "anoisesrc=d=0.7:c=pink:a=0.6",
-       "-af", "highpass=f=500,lowpass=f=7000,afade=t=in:d=0.4:curve=exp,afade=t=out:st=0.4:d=0.3", str(whoosh))
-    ff("-f", "lavfi", "-i", "aevalsrc='0.9*sin(2*PI*(38+90*exp(-t*18))*t)*exp(-t*5)':s=44100:d=1.4",
-       "-af", "lowpass=f=900", str(hit))
-    return {"whoosh": "run/whoosh.wav", "hit": "run/hit.wav"}
+    """Copia el kit de efectos (assets/sfx: propios y de Kenney, todos CC0) a la carpeta del render."""
+    dest = run / "sfx"
+    dest.mkdir(exist_ok=True)
+    kit = {}
+    for k in SFX_KEYS:
+        src = SFX_DIR / f"{k}.wav"
+        if src.exists():
+            shutil.copy(src, dest / src.name)
+            kit[k] = f"run/sfx/{src.name}"
+    if len(kit) != len(SFX_KEYS):
+        log.warning("Faltan efectos de sonido en assets/sfx: %s", sorted(set(SFX_KEYS) - set(kit)))
+        return {}
+    return kit
 
 
 def fetch_logo(url: str, run: Path) -> str | None:

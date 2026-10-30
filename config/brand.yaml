@@ -7,6 +7,8 @@ brand:
   handle: "@thetechbridgesolution"
   website: "https://thetechbridgesolution.com"
   logo_url: "https://thetechbridgesolution.com/wp-content/uploads/2025/07/thetechbridgesolution-logo.png"
+  # Frase fija del cierre de cada Reel: deja claro quién sabe de esto, sin vender nada
+  tagline: "Formación en Microsoft 365 e IA para equipos"
   # Qué hace la empresa (el guionista lo usa para que los temas tengan coherencia)
   about: >
     Consultora española de formación y servicios en Microsoft 365 e IA aplicada al trabajo:
@@ -45,7 +47,7 @@ formats:
   noticia:
     needs_news: true
     accent: 0
-    label: "ACABA DE SALIR"
+    label: "NOTICIA"
     brief: "Una novedad real de esta semana y por qué le importa a alguien que dirige o trabaja en una empresa."
   dato:
     needs_news: true
@@ -55,7 +57,7 @@ formats:
   tendencia:
     needs_news: true
     accent: 1
-    label: "LO QUE YA ESTÁ PASANDO"
+    label: "TENDENCIA"
     brief: "Qué están haciendo las empresas que van por delante, a partir de una noticia real."
   truco:
     needs_news: false
@@ -78,8 +80,28 @@ formats:
     label: "MITO O REALIDAD"
     brief: "Un mito frecuente sobre la IA o la tecnología en la empresa y la realidad, con matices."
 
+# Productos con los que trabaja la empresa. Todo el contenido (Reels e historias) gira alrededor de ellos:
+# las noticias se filtran con estas palabras clave y el guionista elige el objeto 3D (hero) del producto.
+# hero: ia · excel · correo · reuniones · datos · documentos · presentaciones · automatizacion
+products:
+  - {name: "Microsoft 365 Copilot", hero: ia, keywords: ["copilot", "microsoft 365", "m365", "office 365"]}
+  - {name: "ChatGPT", hero: ia, keywords: ["chatgpt", "gpt-", "openai"]}
+  - {name: "Excel", hero: excel, keywords: ["excel"]}
+  - {name: "Outlook", hero: correo, keywords: ["outlook"]}
+  - {name: "Teams", hero: reuniones, keywords: ["teams"]}
+  - {name: "Power BI", hero: datos, keywords: ["power bi", "powerbi", "fabric"]}
+  - {name: "Word", hero: documentos, keywords: ["microsoft word", "word document", "en word"]}
+  - {name: "PowerPoint", hero: presentaciones, keywords: ["powerpoint"]}
+  - {name: "SharePoint y OneDrive", hero: documentos, keywords: ["sharepoint", "onedrive", "microsoft loop"]}
+  - {name: "Power Automate, Power Apps y Copilot Studio", hero: automatizacion, keywords: ["power automate", "power apps", "power platform", "copilot studio"]}
+
 # Fuentes de noticias (RSS/Atom). Si alguna falla, se ignora y sigue.
 sources:
+  - "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=Microsoft365InsiderBlog"
+  - "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=ExcelBlog"
+  - "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftTeamsBlog"
+  - "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=SPBlog"
+  - "https://powerbi.microsoft.com/en-us/blog/feed/"
   - "https://www.microsoft.com/en-us/microsoft-365/blog/feed/"
   - "https://blogs.microsoft.com/feed/"
   - "https://openai.com/news/rss.xml"
@@ -108,3 +130,20 @@ caption:
   footer: "Cada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution"
   brand_hashtags: ["#TheTechBridgeSolution"]
   max_hashtags: 5
+
+# Claude se usa con tu suscripción. Tus horas de trabajo con Claude son de 9:00 a 14:00 y el límite va por
+# ventanas de 5 horas que empiezan con la primera petición: si el agente pidiera algo después de las 4:00, su
+# ventana seguiría abierta a las 9:00. Por eso el agente solo usa Claude fuera de esta franja; lo que llegue
+# dentro (por ejemplo, historias pedidas por correo) espera a que acabe.
+claude:
+  quiet_from: "04:00"
+  quiet_to: "14:00"
+
+# Historias de Instagram: se preparan de madrugada junto al Reel y se publican a horas al azar.
+stories:
+  per_day: 3
+  window: ["09:00", "21:00"]
+  min_gap_minutes: 120
+  # A esta hora se mira si ha salido algo importante sobre los productos y, si lo hay, se añade una historia
+  # de "Última hora" para la tarde (solo una al día y solo si de verdad es relevante).
+  news_check: "15:00"

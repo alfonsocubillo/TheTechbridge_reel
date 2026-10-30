@@ -28,10 +28,10 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from . import instagram, mailer, materials
-from .common import OUT_DIR, ROOT, env, load_config, log, media_duration, seal, unseal
+from .common import OUT_DIR, ROOT, claude_allowed, env, load_config, log, media_duration, minutes, seal, unseal
 
 STATE_PATH = ROOT / "data" / "state.json"
-META_KEYS = ("date", "format", "format_label", "topic", "source_url", "source_name", "caption", "cover_title", "stock_ids", "voice")
+META_KEYS = ("date", "format", "format_label", "topic", "source_url", "source_name", "caption", "cover_title", "product", "stock_ids", "voice")
 
 
 # ───────────────────────── Estado ─────────────────────────
@@ -54,6 +54,39 @@ def private(item: dict | None) -> dict:
 
 def next_requests(state: dict) -> list[dict]:
     return unseal(state.get("next")) or []
+
+
+def story_list(state: dict) -> list[dict]:
+    return state.setdefault("stories", [])
+
+
+def story_requests(state: dict) -> list[dict]:
+    return unseal(state.get("story_requests")) or []
+
+
+def due_story(state: dict, now: datetime) -> dict | None:
+    """La próxima historia programada para hoy cuya hora ya ha llegado."""
+    today, t = now.date().isoformat(), now.hour * 60 + now.minute
+    for st in sorted(story_list(state), key=lambda x: (x["day"], x["at"])):
+        if st["status"] == "scheduled" and st["day"] == today and minutes(st["at"]) <= t:
+            return st
+    return None
+
+
+def todays_stories(state: dict, now: datetime) -> list[dict]:
+    today = now.date().isoformat()
+    return sorted((x for x in story_list(state) if x["day"] == today and x["status"] != "cancelled"), key=lambda x: x["at"])
+
+
+def expire_stories(cfg: dict, state: dict, now: datetime) -> None:
+    """Las que no se pudieron publicar a tiempo se dan por perdidas (no se publican de madrugada)."""
+    end = minutes((cfg.get("stories") or {}).get("window", ["09:00", "21:00"])[1]) + 60
+    today, t = now.date().isoformat(), now.hour * 60 + now.minute
+    for st in story_list(state):
+        if st["status"] == "scheduled" and (st["day"] < today or (st["day"] == today and t > end)):
+            st["status"] = "missed"
+            log.warning("Historia %s no publicada a tiempo", st["id"])
+    state["stories"] = story_list(state)[-40:]
 
 
 def now_local(cfg: dict) -> datetime:
@@ -125,6 +158,25 @@ def next_generation(cfg: dict, now: datetime) -> datetime:
     return gen if now < gen else gen + timedelta(days=1)
 
 
+def story_cards(stories: list[dict], prefix: str = "st") -> tuple[list[dict], dict]:
+    """Historias para mostrar en un correo: datos de cada tarjeta + imágenes incrustadas (cid)."""
+    cards, inline = [], {}
+    for i, st in enumerate(stories):
+        cid = f"{prefix}{i}"
+        inline[cid] = OUT_DIR / st["thumb"]
+        cards.append({"cid": cid, "label": st["label"], "title": st["title"], "at": st["at"], "status": st["status"],
+                      "day": st["day"]})
+    return cards, inline
+
+
+def download_story_thumbs(stories: list[dict]) -> None:
+    for st in stories:
+        try:
+            download(st["tag"], st["thumb"])
+        except subprocess.CalledProcessError as e:
+            log.warning("No se pudo bajar la miniatura de %s: %s", st["id"], e)
+
+
 def send_review(cfg: dict, state: dict, item: dict) -> None:
     now = now_local(cfg)
     pt = publish_time(cfg, now)
@@ -134,12 +186,15 @@ def send_review(cfg: dict, state: dict, item: dict) -> None:
                   else f"mañana a las {hhmm(regen)} te llega una versión nueva.")
     priv = private(item)
     pending_next = " · ".join(r["text"] or "(material adjunto)" for r in next_requests(state))
+    stories = todays_stories(state, now)
+    download_story_thumbs([st for st in stories if not (OUT_DIR / st["thumb"]).exists()])
+    cards, story_inline = story_cards(stories)
     subject, html_body, text = mailer.review_email(
         item, item, asset_url(item["tag"], "preview.mp4"), publish_note, regen_note,
         asked=priv.get("asked", ""), files=priv.get("files", []), next_note=pending_next,
-        has_cover=(OUT_DIR / "cover.jpg").exists())
+        has_cover=(OUT_DIR / "cover.jpg").exists(), stories=cards)
     mailer.send(subject, html_body, text, attachments=[OUT_DIR / "preview.mp4"],
-                inline={"thumb": OUT_DIR / "thumb.jpg", "cover": OUT_DIR / "cover.jpg"})
+                inline={"thumb": OUT_DIR / "thumb.jpg", "cover": OUT_DIR / "cover.jpg", **story_inline})
     item["status"] = "emailed"
     item["emailed_at"] = now.isoformat(timespec="minutes")
 
@@ -149,11 +204,19 @@ def send_review(cfg: dict, state: dict, item: dict) -> None:
 YES = re.compile(r"\b(s[ií]|vale|ok|okay|perfecto|adelante|publ[ií]calo|me gusta|aprobado|genial|dale)\b", re.I)
 NO = re.compile(r"\b(no|cambia|otro|otra|rehaz|no me gusta|no me convence)\b", re.I)
 TOMORROW = re.compile(r"\bma[ñn]ana\b", re.I)
+STORY_WORD = re.compile(r"\bhistorias?\b|\bstor(y|ies)\b", re.I)
+NO_STORY = re.compile(r"\b(sin|no|cancela\w*|quita\w*)\b.{0,20}\bhistorias?\b", re.I)
+
+DECISIONS = {"approve", "change", "next", "stories", "no_stories", "unclear"}
 
 
 def classify(reply: dict, pending: bool) -> tuple[str, str]:
-    """Devuelve ('approve'|'change'|'next'|'unclear', indicaciones)."""
+    """Devuelve (decisión, indicaciones). Decisiones: approve · change · next · stories · no_stories · unclear."""
     subject, body = reply["subject"].upper(), reply["body"]
+    if mailer.NO_STORIES in subject:
+        return "no_stories", ""
+    if mailer.STORIES in subject:
+        return "stories", body
     if mailer.NEXT in subject or "MANANA" in subject:
         return "next", body
     if mailer.APPROVE in subject:
@@ -161,23 +224,30 @@ def classify(reply: dict, pending: bool) -> tuple[str, str]:
     if mailer.CHANGE in subject:
         return "change", body
     from .writer import _json, claude, claude_ready
-    if claude_ready():
+    # Fuera de la franja protegida se usa Claude; dentro, solo reglas (no se toca la cuota del usuario)
+    if claude_ready() and claude_allowed():
         try:
             r = _json(claude(
-                "Clasificas correos de una directora al sistema que prepara sus vídeos de Instagram. Solo JSON.",
+                "Clasificas correos de una directora al sistema que prepara sus vídeos e historias de Instagram. Solo JSON.",
                 f"¿Hay un vídeo esperando su aprobación ahora mismo? {'Sí' if pending else 'No'}.\n"
                 f"Adjuntos: {reply.get('files') or 'ninguno'}\n"
                 f'Asunto: {reply["subject"]}\nCorreo:\n"""{body[:2000]}"""\n\n'
-                'Devuelve {"decision": "approve" | "change" | "next" | "unclear", "feedback": "..."}\n'
+                'Devuelve {"decision": "approve" | "change" | "next" | "stories" | "no_stories" | "unclear", "feedback": "..."}\n'
                 '- approve: quiere publicar el vídeo pendiente.\n'
                 '- change: no le gusta el pendiente y quiere otro (feedback = qué quiere, con sus palabras).\n'
                 '- next: pide un vídeo concreto para mañana o manda material/ideas para próximos vídeos '
                 '(feedback = qué quiere).\n'
-                '- unclear: no se entiende.'))
-            if r.get("decision") in {"approve", "change", "next", "unclear"}:
+                '- stories: pide historias de Instagram sobre algo, con o sin material (feedback = qué quiere).\n'
+                '- no_stories: no quiere que se publiquen las historias de hoy.\n'
+                '- unclear: no se entiende.', fast=True))
+            if r.get("decision") in DECISIONS:
                 return r["decision"], r.get("feedback", "")
         except Exception as e:
             log.warning("No se pudo clasificar con Claude: %s", e)
+    if NO_STORY.search(body):
+        return "no_stories", ""
+    if STORY_WORD.search(body):
+        return "stories", body
     if TOMORROW.search(body) or (reply.get("files") and not pending):
         return "next", body
     if NO.search(body):
@@ -200,6 +270,7 @@ def process_inbox(cfg: dict, state: dict) -> None:
         feedback = feedback.strip()
         now = now_local(cfg)
         log.info("Correo de la directora → %s", decision)
+        asked = f"<br><br>Lo que pides: <i>“{html.escape(feedback)}”</i>" if feedback else ""
 
         if decision == "next":
             reqs = next_requests(state)
@@ -209,10 +280,30 @@ def process_inbox(cfg: dict, state: dict) -> None:
             gen = next_generation(cfg, now)
             email_at = at_hour(gen, cfg["review"]["email_hour"])
             day = "hoy" if email_at.date() == now.date() else "mañana"
-            asked = f"<br><br>Lo que pides: <i>“{feedback}”</i>" if feedback else ""
             mailer.notify("📌 Apuntado para el próximo vídeo",
                           f"Perfecto. {day.capitalize()} a las {hhmm(email_at)} te llega el vídeo preparado con esto."
                           f"{asked}{_files_line(reply['files'])}")
+            continue
+
+        if decision == "stories":
+            reqs = story_requests(state)
+            reqs.append({"text": feedback, "message_id": reply["message_id"], "files": reply["files"],
+                         "at": now.isoformat(timespec="minutes")})
+            state["story_requests"] = seal(reqs)
+            quiet_to = (cfg.get("claude") or {}).get("quiet_to", "14:00")
+            when = "en unos minutos" if claude_allowed(now, cfg) else f"a partir de las {quiet_to}"
+            mailer.notify("📲 Apuntado para historias",
+                          f"Perfecto. Preparo las historias {when} y te mando cómo quedan y a qué hora sale cada una."
+                          f"{asked}{_files_line(reply['files'])}")
+            continue
+
+        if decision == "no_stories":
+            left = [st for st in todays_stories(state, now) if st["status"] == "scheduled"]
+            for st in left:
+                st["status"] = "cancelled"
+            mailer.notify("🚫 Historias canceladas",
+                          f"Hecho: hoy no se publica ninguna historia más ({len(left)} canceladas)." if left
+                          else "Hoy no quedaba ninguna historia pendiente de publicar.")
             continue
 
         m = re.search(r"\[REEL ([\w-]+)\]", reply["subject"])
@@ -245,7 +336,6 @@ def process_inbox(cfg: dict, state: dict) -> None:
             item.update(status="regen_requested", private=seal(priv), regen_due=regen.isoformat(timespec="minutes"),
                         decided_at=now.isoformat(timespec="minutes"))
             day = "hoy" if regen.date() == now.date() else "mañana"
-            asked = f"<br><br>Lo que pides: <i>“{feedback}”</i>" if feedback else ""
             mailer.notify("✏️ Recibido, preparo otro",
                           f"Entendido. {day.capitalize()} a las {hhmm(regen)} te llega una versión nueva."
                           f"{asked}{_files_line(reply['files'])}")
@@ -253,28 +343,45 @@ def process_inbox(cfg: dict, state: dict) -> None:
             mailer.notify("No te he entendido",
                           "Para publicar el vídeo pulsa <b>“Sí, publícalo”</b> en el correo anterior. "
                           "Si quieres otro, pulsa <b>“No, quiero otro”</b> y escribe qué te gustaría. "
-                          "Para pedir el de mañana, pulsa <b>“Pedir el vídeo de mañana”</b>.")
+                          "Para pedir el de mañana, pulsa <b>“Pedir el vídeo de mañana”</b>. "
+                          "Para historias, pulsa <b>“Historias con esto”</b>.")
 
 
 # ───────────────────────── Decisión de cada tick ─────────────────────────
 
 def decide(cfg: dict, state: dict) -> str:
+    """Una acción por tick. Las que usan Claude solo salen fuera de la franja protegida."""
     r = cfg["review"]
     now = now_local(cfg)
     today = now.date().isoformat()
+    t = now.hour * 60 + now.minute
     item = state.get("item")
     status = item["status"] if item else None
+    can_claude = claude_allowed(now, cfg)
+    st_cfg = cfg.get("stories") or {}
 
     # Aprobado → se publica a la hora fijada del día en que se aprobó (o al momento si ya pasó)
     if status == "approved" and now >= publish_time(cfg, datetime.fromisoformat(item["decided_at"])):
         return "publish"
-    if status == "regen_requested" and now >= datetime.fromisoformat(item["regen_due"]):
+    if status == "regen_requested" and now >= datetime.fromisoformat(item["regen_due"]) and can_claude:
         return "regenerate"
+    if due_story(state, now):
+        return "story"
+    if story_requests(state) and can_claude:
+        return "stories:request"
+    window_end = minutes(st_cfg.get("window", ["09:00", "21:00"])[1])
+    if (st_cfg.get("news_check") and state.get("news_check_day") != today and can_claude
+            and minutes(st_cfg["news_check"]) <= t <= window_end - 90):
+        return "stories:news"
     if status == "generated" and item["day"] == today and now.hour >= r["email_hour"]:
         return "email"
-    nightly_window = r["generate_hour"] <= now.hour < r["email_hour"]
+    # La generación nocturna usa Claude al principio: tiene que arrancar antes de la franja protegida
+    quiet_from = minutes((cfg.get("claude") or {}).get("quiet_from", "04:00"))
+    nightly_window = r["generate_hour"] * 60 <= t < min(r["email_hour"] * 60, quiet_from - 15)
     already_today = item and item["day"] == today and item.get("kind") == "nightly"
-    if nightly_window and not already_today and status not in {"regen_requested", "approved"}:
+    tries = state.get("gen_attempts") or {}
+    tried_enough = tries.get("day") == today and tries.get("n", 0) >= 3
+    if nightly_window and not already_today and not tried_enough and status not in {"regen_requested", "approved"}:
         return "generate"
     return "none"
 
@@ -282,13 +389,40 @@ def decide(cfg: dict, state: dict) -> str:
 def cmd_tick(args) -> None:
     cfg = load_config()
     state = load_state()
+    now = now_local(cfg)
+    expire_stories(cfg, state, now)
     if env("MAIL_USER") and env("MAIL_APP_PASSWORD"):
         process_inbox(cfg, state)
     action = args.force or decide(cfg, state)
-    log.info("Acción: %s", action)
+    mode = args.mode or ""
+    if ":" in action:
+        action, mode = action.split(":", 1)
+    log.info("Acción: %s %s", action, mode)
+
+    # Las tareas que usan Claude tienen intentos limitados: si algo falla no se repite cada 10 minutos
+    today = now.date().isoformat()
+    if action == "generate" and not args.force:
+        tries = state.get("gen_attempts") or {}
+        state["gen_attempts"] = {"day": today, "n": (tries.get("n", 0) if tries.get("day") == today else 0) + 1}
+    if action == "stories" and mode == "news":
+        state["news_check_day"] = today
+    if action == "stories" and mode == "request":
+        state["story_request_attempts"] = state.get("story_request_attempts", 0) + 1
+        if state["story_request_attempts"] > 3:
+            state.pop("story_requests", None)
+            state.pop("story_request_attempts", None)
+            mailer.notify("No he podido preparar las historias",
+                          "Lo he intentado varias veces y ha fallado. Vuelve a pedírmelas, por favor.")
+            action, mode = "none", ""
 
     if action == "publish" and not instagram_on():
         finish_without_instagram(cfg, state)
+        action = "none"
+    if action == "story" and not instagram_on():
+        st = due_story(state, now)
+        if st:
+            st.update(status="published_test", published_at=now.isoformat(timespec="minutes"))
+            log.info("Instagram desactivado: la historia %s (%s) se da por publicada", st["id"], st["title"])
         action = "none"
     if action == "email":
         item = state["item"]
@@ -299,8 +433,8 @@ def cmd_tick(args) -> None:
     save_state(state)
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
-            fh.write(f"action={action}\n")
-    print(action)
+            fh.write(f"action={action}\nmode={mode}\n")
+    print(action, mode)
 
 
 # ───────────────────────── Generar / publicar ─────────────────────────
@@ -352,16 +486,108 @@ def cmd_generate(args) -> None:
         "status": "generated",
         "private": seal({"asked": asked, "files": file_names}) if (asked or file_names) else None,
     }
+    entries = []
     if not args.no_render:
         make_review_assets()
         files = [str(OUT_DIR / n) for n in ("reel.mp4", "preview.mp4", "thumb.jpg", "cover.jpg") if (OUT_DIR / n).exists()]
+        if not regen:
+            # Historias del día: mismas fuentes y misma estética; si fallan, el Reel sigue adelante
+            try:
+                from .stories import daily
+                entries = daily(cfg, meta, item, now)
+                files += [str(OUT_DIR / e[k]) for e in entries for k in ("file", "thumb")]
+            except Exception as e:
+                log.warning("No se pudieron preparar las historias de hoy: %s", e)
         gh("release", "create", item["tag"], *files, "--repo", repo(), "--title", f"Reel {item_id}",
-           "--notes", "Vídeo pendiente de revisión.", "--prerelease")
+           "--notes", "Vídeo e historias pendientes de revisión.", "--prerelease")
     state["item"] = item
+    if entries:
+        today = now.date().isoformat()
+        state["stories"] = [s for s in story_list(state) if not (s["day"] == today and s.get("origin") == "nightly")] + entries
+        log.info("Historias de hoy a las %s", ", ".join(e["at"] for e in entries))
     if not regen:
         state.pop("next", None)  # la petición para hoy ya está usada
     if regen and not args.no_render:
         send_review(cfg, state, item)  # la versión nueva se manda en cuanto está lista
+    save_state(state)
+
+
+def cmd_stories(args) -> None:
+    """Historias fuera de la tanda nocturna: las que pide la directora (request) o una de última hora (news)."""
+    from . import news, writer
+    from .common import load_history
+    from .stories import _entries, next_slot_day, render_stories, schedule
+    cfg = load_config()
+    state = load_state()
+    now = now_local(cfg)
+    if not claude_allowed(now, cfg):
+        log.info("Franja protegida: las historias esperan a que acabe")
+        return
+    history = load_history()
+    recent = [h.get("topic", "") for h in history]
+    if args.mode == "request":
+        reqs = story_requests(state)
+        if not reqs:
+            log.info("No hay historias pedidas")
+            return
+        asked, mat_text, images, _names = gather(reqs)
+        items = news.relevant(news.recent_news(cfg["sources"], set(), days=4), cfg.get("products", []))
+        stories = writer.write_stories(cfg, None, items, recent_titles=recent, materials=mat_text, images=images,
+                                       feedback=asked or None)
+        origin, start = "request", None
+    else:
+        state["news_check_day"] = now.date().isoformat()
+        used = ({h.get("source_url") for h in history} | {s.get("source_url") for s in story_list(state)}
+                | {(state.get("item") or {}).get("source_url")})
+        items = news.relevant(news.recent_news(cfg["sources"], {u for u in used if u}, days=2), cfg.get("products", []))
+        pick = writer.pick_story(cfg, "noticia", items, recent)
+        if not pick:
+            log.info("Nada de última hora que merezca una historia")
+            save_state(state)
+            return
+        stories = writer.write_stories(cfg, ["ultima_hora"], [pick], recent_titles=recent)
+        for s in stories:
+            s["source_url"] = pick["url"]
+        origin, start = "news", "16:00"
+    rendered = render_stories(cfg, stories, prefix=f"{origin}{now:%H%M}_")
+    day, earliest = next_slot_day(cfg, now)
+    taken = [s["at"] for s in story_list(state) if s["day"] == day.isoformat() and s["status"] != "cancelled"]
+    times = schedule(cfg, day, len(rendered), earliest=earliest, taken=taken, start=start)
+    if len(times) < len(rendered):
+        log.warning("No queda hueco para las historias hoy")
+        save_state(state)
+        return
+    tag = f"stories-{now:%Y%m%d-%H%M}"
+    files = [str(OUT_DIR / s[k]) for s in rendered for k in ("file", "thumb")]
+    gh("release", "create", tag, *files, "--repo", repo(), "--title", f"Historias {now:%d/%m %H:%M}",
+       "--notes", "Historias de Instagram.", "--prerelease")
+    entries = _entries(rendered, times, day, tag, f"{origin}{now:%m%d%H%M}", origin)
+    story_list(state).extend(entries)
+    if origin == "request":
+        state.pop("story_requests", None)
+        state.pop("story_request_attempts", None)
+    save_state(state)
+    cards, inline = story_cards(entries)
+    subject, body, text = mailer.stories_email(cards, origin, now.date().isoformat())
+    mailer.send(subject, body, text, inline=inline)
+
+
+def cmd_due_story(_args) -> None:
+    """Imprime "ETIQUETA FICHERO" de la historia que toca publicar (lo usa el workflow)."""
+    cfg = load_config()
+    st = due_story(load_state(), now_local(cfg))
+    print(f"{st['tag']} {st['file']}" if st else "")
+
+
+def cmd_story_publish(args) -> None:
+    cfg = load_config()
+    state = load_state()
+    now = now_local(cfg)
+    st = due_story(state, now)
+    if not st:
+        raise SystemExit("No hay ninguna historia pendiente")
+    media_id = instagram.publish_story(args.video_url)
+    st.update(status="published", media_id=media_id, published_at=now.isoformat(timespec="minutes"))
     save_state(state)
 
 
@@ -404,19 +630,29 @@ def cmd_status(_args) -> None:
     state = load_state()
     item = state.get("item")
     print(json.dumps({"item": {k: v for k, v in (item or {}).items() if k != "private"},
-                      "private": private(item), "next": next_requests(state)}, ensure_ascii=False, indent=2))
+                      "private": private(item), "next": next_requests(state),
+                      "stories": story_list(state), "story_requests": story_requests(state)},
+                     ensure_ascii=False, indent=2))
 
 
 def main() -> None:
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
     t = sub.add_parser("tick")
-    t.add_argument("--force", choices=["generate", "regenerate", "email", "publish", "none"])
+    t.add_argument("--force", choices=["generate", "regenerate", "email", "publish", "story", "stories", "none"])
+    t.add_argument("--mode", choices=["request", "news"], help="Con --force stories: qué historias preparar")
     t.set_defaults(func=cmd_tick)
     g = sub.add_parser("generate")
     g.add_argument("--mode", choices=["generate", "regenerate"], default="generate")
     g.add_argument("--no-render", action="store_true")
     g.set_defaults(func=cmd_generate)
+    s = sub.add_parser("stories")
+    s.add_argument("--mode", choices=["request", "news"], required=True)
+    s.set_defaults(func=cmd_stories)
+    sub.add_parser("due-story").set_defaults(func=cmd_due_story)
+    sp_ = sub.add_parser("story-publish")
+    sp_.add_argument("--video-url", required=True)
+    sp_.set_defaults(func=cmd_story_publish)
     pub = sub.add_parser("publish")
     pub.add_argument("--video-url", required=True)
     pub.add_argument("--cover-url")

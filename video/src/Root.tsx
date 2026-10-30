@@ -1,6 +1,8 @@
 import React from 'react';
 import {Composition} from 'remotion';
 import {Cover, coverSample} from './Cover';
+import {Lab} from './Lab';
+import {Story, storySample} from './Story';
 import {Reel} from './Reel';
 import type {ReelProps} from './types';
 
@@ -16,7 +18,10 @@ const sample: ReelProps = {
     accentB: '#22D3EE',
     logo: null,
   },
-  formatLabel: 'TRUCO',
+  formatKey: 'prompt',
+  formatLabel: 'PROMPT DEL DÍA',
+  hero: 'correo',
+  tagline: 'Formación en Microsoft 365 e IA para equipos',
   audioMode: 'music',
   music: '',
   musicVolume: 0.5,
@@ -47,5 +52,10 @@ export const RemotionRoot: React.FC = () => (
   />
   {/* Portada: se renderiza un solo fotograma, cuando las animaciones de entrada ya han terminado */}
   <Composition id="Cover" component={Cover} width={1080} height={1920} fps={30} durationInFrames={90} defaultProps={coverSample} />
+  {/* Historia de Instagram: la duración la marca cada guion */}
+  <Composition id="Story" component={Story} width={1080} height={1920} fps={30} durationInFrames={storySample.durationInFrames}
+    defaultProps={storySample} calculateMetadata={({props}) => ({durationInFrames: Math.max(props.durationInFrames, 90)})} />
+  <Composition id="Lab" component={Lab} width={1080} height={1920} fps={30} durationInFrames={120}
+    defaultProps={{hero: 'ia' as const, accentA: '#3B82F6', accentB: '#22D3EE', bg: '#070B18'}} />
   </>
 );

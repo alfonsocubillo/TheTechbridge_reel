@@ -1,6 +1,7 @@
 {
   "format": "prompt",
   "topic": "Resumir el correo del día con IA",
+  "product": "Outlook",
   "cover": {
     "title": "Tu bandeja, resumida en minutos",
     "highlight": "resumida"

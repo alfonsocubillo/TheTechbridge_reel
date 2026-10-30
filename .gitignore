@@ -5,3 +5,4 @@ video/public/run/
 __pycache__/
 *.pyc
 .env
+.claude/

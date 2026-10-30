@@ -11,6 +11,7 @@ import argparse
 import json
 import random
 import re
+import shutil
 import subprocess
 from datetime import datetime, timezone
 
@@ -32,6 +33,16 @@ def choose_format(cfg: dict, history: list[dict], have_news: bool) -> str:
             continue
         return f
     return "truco"
+
+
+def hero_for(cfg: dict, product: str | None) -> str:
+    """Objeto 3D protagonista según el producto del guion (config → products → hero)."""
+    want = (product or "").strip().lower()
+    for p in cfg.get("products", []):
+        name = p["name"].lower()
+        if want and (want == name or want in name or name in want):
+            return p["hero"]
+    return "ia"
 
 
 def build_props(cfg: dict, sb: dict, fmt_key: str, history: list[dict]) -> dict:
@@ -86,7 +97,10 @@ def build_props(cfg: dict, sb: dict, fmt_key: str, history: list[dict]) -> dict:
             "accentA": accent[0], "accentB": accent[1],
             "logo": assets.fetch_logo(cfg["brand"]["logo_url"], run),
         },
+        "formatKey": fmt_key,
         "formatLabel": cfg["formats"][fmt_key]["label"],
+        "hero": hero_for(cfg, sb.get("product")),
+        "tagline": cfg["brand"].get("tagline", ""),
         "audioMode": "voice" if use_voice else "music",
         "music": f"run/{music.name}",
         "musicVolume": cfg["audio"]["music_volume_with_voice" if use_voice else "music_volume_alone"],
@@ -99,31 +113,32 @@ def build_props(cfg: dict, sb: dict, fmt_key: str, history: list[dict]) -> dict:
     cover = sb.get("cover") or {}
     cover_props = {
         "brand": props["brand"],
+        "formatKey": fmt_key,
         "formatLabel": props["formatLabel"],
+        "hero": props["hero"],
         "title": cover.get("title") or hook.get("text", ""),
         "highlight": cover.get("highlight") or hook.get("highlight", ""),
     }
     return {"props": props, "cover": cover_props, "stock_ids": stock_ids, "use_voice": use_voice}
 
 
+def remotion(*args: str) -> None:
+    """Remotion con 3D por software (GitHub no tiene tarjeta gráfica; en local se puede usar RENDER_GL=angle)."""
+    npx = shutil.which("npx") or "npx"  # en Windows es npx.cmd
+    subprocess.run([npx, "remotion", *args, f"--gl={env('RENDER_GL', 'swangle')}"], cwd=VIDEO_DIR, check=True)
+
+
 def render(props: dict) -> None:
-    props_file = OUT_DIR / "props.json"
-    subprocess.run(
-        ["npx", "remotion", "render", "src/index.ts", "Reel", str(OUT_DIR / "reel.mp4"),
-         f"--props={props_file}", "--codec=h264", "--crf=18", "--audio-codec=aac", "--audio-bitrate=192k",
-         f"--concurrency={env('RENDER_CONCURRENCY', '2')}"],
-        cwd=VIDEO_DIR, check=True,
-    )
+    remotion("render", "src/index.ts", "Reel", str(OUT_DIR / "reel.mp4"),
+             f"--props={OUT_DIR / 'props.json'}", "--codec=h264", "--crf=18", "--audio-codec=aac",
+             "--audio-bitrate=192k", f"--concurrency={env('RENDER_CONCURRENCY', '4')}")
 
 
 def render_cover() -> None:
-    """Portada del Reel: misma plantilla para todos los vídeos, con el color del formato."""
-    subprocess.run(
-        ["npx", "remotion", "still", "src/index.ts", "Cover", str(OUT_DIR / "cover.jpg"),
-         f"--props={OUT_DIR / 'cover_props.json'}", f"--frame={COVER_FRAME}",
-         "--image-format=jpeg", "--jpeg-quality=92"],
-        cwd=VIDEO_DIR, check=True,
-    )
+    """Portada del Reel: misma plantilla para todos los vídeos, con el color del formato y el objeto 3D."""
+    remotion("still", "src/index.ts", "Cover", str(OUT_DIR / "cover.jpg"),
+             f"--props={OUT_DIR / 'cover_props.json'}", f"--frame={COVER_FRAME}",
+             "--image-format=jpeg", "--jpeg-quality=92")
 
 
 def caption_text(cfg: dict, sb: dict) -> str:
@@ -154,7 +169,7 @@ def produce(storyboard: str | None = None, fmt: str | None = None, feedback: str
         fmt_key = sb.get("format", "truco")
     else:
         used = {h.get("source_url") for h in history if h.get("source_url")}
-        items = news.recent_news(cfg["sources"], used)
+        items = news.relevant(news.recent_news(cfg["sources"], used), cfg.get("products", []))
         recent_titles = [h.get("topic", "") for h in history]
         if feedback is not None or materials or images:
             fmt_key, story = writer.plan_from_feedback(cfg, feedback or "", items, materials)
@@ -165,6 +180,9 @@ def produce(storyboard: str | None = None, fmt: str | None = None, feedback: str
                 fmt_key = "truco"
             if cfg["formats"][fmt_key]["needs_news"]:
                 story = writer.pick_story(cfg, fmt_key, items, recent_titles)
+                if not story:
+                    log.info("Ninguna noticia sirve para '%s': hoy toca un truco", fmt_key)
+                    fmt_key = "truco"
         log.info("Formato: %s", fmt_key)
         if story:
             article = news.fetch_article_text(story["url"])
@@ -189,6 +207,7 @@ def produce(storyboard: str | None = None, fmt: str | None = None, feedback: str
         "source_name": story["source"] if story else None,
         "caption": caption_text(cfg, sb),
         "cover_title": built["cover"]["title"],
+        "product": sb.get("product"),
         "storyboard": sb,
         "stock_ids": built["stock_ids"],
         "voice": built["use_voice"],

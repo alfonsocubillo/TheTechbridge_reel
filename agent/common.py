@@ -5,7 +5,9 @@ import json
 import logging
 import os
 import subprocess
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import yaml
 
@@ -24,6 +26,31 @@ log = logging.getLogger("reels")
 def load_config() -> dict:
     with open(CONFIG_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def local_now(cfg: dict | None = None) -> datetime:
+    """Hora de Madrid (o la de config). FAKE_NOW="2026-10-30T10:05" la simula en pruebas."""
+    cfg = cfg or load_config()
+    tz = ZoneInfo(cfg["review"]["timezone"])
+    override = os.environ.get("FAKE_NOW")
+    return datetime.fromisoformat(override).replace(tzinfo=tz) if override else datetime.now(tz)
+
+
+def minutes(hhmm: str) -> int:
+    h, m = map(int, str(hhmm).split(":"))
+    return h * 60 + m
+
+
+def claude_allowed(now: datetime | None = None, cfg: dict | None = None) -> bool:
+    """El agente no usa Claude en la franja protegida (por defecto 04:00-14:00): así no toca la ventana
+    de 5 horas de la suscripción mientras el usuario trabaja de 9 a 14."""
+    if os.environ.get("CLAUDE_IGNORE_QUIET"):
+        return True
+    cfg = cfg or load_config()
+    q = cfg.get("claude") or {}
+    now = now or local_now(cfg)
+    t = now.hour * 60 + now.minute
+    return not (minutes(q.get("quiet_from", "04:00")) <= t < minutes(q.get("quiet_to", "14:00")))
 
 
 def load_history() -> list[dict]:

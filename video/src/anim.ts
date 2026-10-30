@@ -3,8 +3,9 @@ import {Easing, interpolate, spring} from 'remotion';
 import {loadFont as loadDisplay} from '@remotion/google-fonts/SpaceGrotesk';
 import {loadFont as loadBody} from '@remotion/google-fonts/Inter';
 
-export const DISPLAY = loadDisplay().fontFamily;
-export const BODY = loadBody().fontFamily;
+// Solo los pesos y alfabetos que se usan: menos descargas al arrancar cada render
+export const DISPLAY = loadDisplay('normal', {weights: ['600', '700'], subsets: ['latin', 'latin-ext']}).fontFamily;
+export const BODY = loadBody('normal', {weights: ['500', '600', '700', '800'], subsets: ['latin', 'latin-ext']}).fontFamily;
 
 export const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 

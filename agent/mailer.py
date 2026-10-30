@@ -15,6 +15,9 @@ from urllib.parse import quote
 from .common import env, log
 
 APPROVE, CHANGE, NEXT = "APROBAR", "CAMBIAR", "MAÑANA"
+STORIES, NO_STORIES = "HISTORIAS", "SIN HISTORIAS"  # ojo: SIN HISTORIAS se comprueba antes que HISTORIAS
+STORIES_PROMPT = ("Cuéntame de qué quieres las historias. Puedes adjuntar documentos, PDFs, presentaciones, fotos "
+                  "o pegar enlaces y mensajes: se usarán como fuente:")
 CHANGE_PROMPT = "Escribe aquí qué vídeo quieres (tema, tono, estilo...). Puedes adjuntar archivos o pegar enlaces:"
 NEXT_PROMPT = ("Describe el vídeo que quieres para mañana. Puedes adjuntar documentos, PDFs, presentaciones, "
                "fotos o pegar enlaces: se usarán como fuente:")
@@ -58,12 +61,13 @@ def _mailto(subject: str, body: str = "") -> str:
 
 def review_email(item: dict, meta: dict, video_link: str, publish_note: str, regen_note: str,
                  asked: str = "", files: list[str] = (), next_note: str = "",
-                 has_cover: bool = False) -> tuple[str, str, str]:
+                 has_cover: bool = False, stories: list[dict] = ()) -> tuple[str, str, str]:
     """Devuelve (asunto, html, texto) del correo de revisión."""
     tag = f"[REEL {item['id']}]"
     approve = _mailto(f"{tag} {APPROVE}", "Publícalo.")
     change = _mailto(f"{tag} {CHANGE}", f"{CHANGE_PROMPT}\n\n")
     tomorrow = _mailto(f"{tag} {NEXT}", f"{NEXT_PROMPT}\n\n")
+    stories_html = stories_block(stories, tag)
     e = html.escape
     regen = item.get("attempt", 1) > 1
     version = "Nueva versión según lo que pediste" if regen else "Vídeo de hoy"
@@ -120,6 +124,7 @@ def review_email(item: dict, meta: dict, video_link: str, publish_note: str, reg
   {next_html}
   </div>
 </td></tr>
+{stories_html}
 <tr><td style="padding:22px 30px 28px">
   {cover_html}
   <div style="font-size:13px;letter-spacing:2px;color:#5b6478;font-weight:700;margin-bottom:8px">TEXTO QUE SE PUBLICARÁ</div>
@@ -134,6 +139,62 @@ def review_email(item: dict, meta: dict, video_link: str, publish_note: str, reg
                  f"Para pedir el vídeo de mañana, escribe con el asunto: {NEXT} (puedes adjuntar archivos).\n\n"
                  f"Texto que se publicará:\n{meta['caption']}")
     return f"{tag} {version}: {meta.get('topic')}", html_body, text_body
+
+
+def _story_status(card: dict) -> str:
+    return {"scheduled": f"a las {card['at']}", "published": "publicada", "published_test": "hecha (Instagram apagado)",
+            "missed": "no salió", "cancelled": "cancelada"}.get(card.get("status", ""), card.get("at", ""))
+
+
+def story_grid(cards: list[dict]) -> str:
+    e = html.escape
+    cells = "".join(
+        f'<td width="33%" valign="top" style="padding:4px 6px 4px 0">'
+        f'<img src="cid:{c["cid"]}" width="160" style="width:100%;max-width:160px;border-radius:10px;display:block" alt="Historia">'
+        f'<div style="font-size:12px;font-weight:700;color:#2563eb;margin-top:6px">{e(c["label"])} · {e(_story_status(c))}</div>'
+        f'<div style="font-size:13px;color:#1f2937;line-height:1.35">{e(c["title"])}</div></td>'
+        for c in cards[:6])
+    return f'<table cellpadding="0" cellspacing="0" width="100%"><tr>{cells}</tr></table>'
+
+
+def stories_block(cards: list[dict], tag: str) -> str:
+    btn = ("display:inline-block;padding:14px 22px;border-radius:12px;font-weight:700;font-size:15px;"
+           "text-decoration:none;margin:10px 6px 4px 0;")
+    ask = _mailto(f"{tag} {STORIES}", f"{STORIES_PROMPT}\n\n")
+    stop = _mailto(f"{tag} {NO_STORIES}", "No publiques más historias hoy.")
+    intro = ("Se publican solas a estas horas. Si alguna no te convence, puedes cancelar las que quedan."
+             if cards else "Hoy no hay historias programadas.")
+    return f"""<tr><td style="padding:18px 30px 4px">
+  <div style="border-top:1px solid #e5e8ef;padding-top:20px">
+  <div style="font-size:17px;font-weight:700;color:#0b1020;margin-bottom:6px">📲 Historias de hoy</div>
+  <p style="margin:0 0 10px;font-size:14px;color:#5b6478;line-height:1.5">{intro}</p>
+  {story_grid(cards) if cards else ""}
+  <a href="{ask}" style="{btn}background:#0b1020;color:#ffffff">📲 Historias con esto</a>
+  <a href="{stop}" style="{btn}background:#ffffff;color:#0b1020;border:2px solid #0b1020">🚫 Sin historias hoy</a>
+  <p style="margin:8px 0 0;font-size:13px;color:#5b6478;line-height:1.5">
+    Con <b>“Historias con esto”</b> cuentas en una frase de qué las quieres y, si quieres, adjuntas documentos
+    o pegas enlaces y mensajes. Te llegan listas con la hora a la que sale cada una.</p>
+  </div>
+</td></tr>"""
+
+
+def stories_email(cards: list[dict], origin: str, day: str) -> tuple[str, str, str]:
+    """Aviso de historias nuevas (pedidas por la directora o de última hora) con sus miniaturas y horas."""
+    title = "📰 Historia de última hora" if origin == "news" else "📲 Tus historias están listas"
+    lead = ("Ha salido algo importante sobre los productos y he preparado una historia para esta tarde."
+            if origin == "news" else "Aquí tienes las historias que pediste.")
+    stop = _mailto(NO_STORIES, "No publiques más historias hoy.")
+    body = f"""<!doctype html><html><body style="margin:0;background:#eef1f7;font-family:Segoe UI,Helvetica,Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden">
+<tr><td style="background:#070B18;padding:24px 30px;color:#fff;font-size:22px;font-weight:700">{title}</td></tr>
+<tr><td style="padding:22px 30px 28px">
+  <p style="margin:0 0 14px;font-size:15px;color:#1f2937;line-height:1.5">{lead} Se publican solas a la hora indicada{' (' + day + ')' if day else ''}.</p>
+  {story_grid(cards)}
+  <p style="margin:16px 0 0;font-size:13px;color:#5b6478">Si no quieres que salgan, <a href="{stop}" style="color:#2563eb">cancela las historias de hoy</a>.</p>
+</td></tr></table></td></tr></table></body></html>"""
+    text = f"{title}\n\n" + "\n".join(f"- {c['label']} · {_story_status(c)}: {c['title']}" for c in cards)
+    return title, body, text
 
 
 def simple_html(title: str, body: str) -> str:

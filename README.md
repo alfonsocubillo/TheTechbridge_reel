@@ -2,11 +2,12 @@
 
 Cada día, sin que nadie toque nada:
 
-1. **Investiga.** Lee noticias reales (Microsoft 365, OpenAI, Google AI, TechCrunch, The Verge, Xataka).
-2. **Escribe.** Claude elige el formato del día (noticia, dato, tendencia, truco, prompt del día, antes vs ahora, mito o realidad) y escribe el guion, el texto del post y los hashtags. Los formatos rotan para que haya variedad.
-3. **Monta el vídeo.** Usa motion graphics hechos por código (Remotion): tipografía cinética, contadores animados, ventanas de chat que se escriben solas, comparativas, clips de stock cinematográficos con etalonaje de marca, grano de película, destellos en los cortes, música y efectos de sonido. Opcionalmente añade voz en off con subtítulos sincronizados palabra a palabra.
-4. **Prepara la publicación.** Cada vídeo lleva una portada con la misma plantilla que los anteriores (el color depende del formato, así el perfil queda ordenado) y una descripción con gancho, pasos prácticos, llamada a guardar o compartir, pregunta final, firma de la marca y 5 hashtags.
-5. **Pide aprobación por email** y solo publica lo que la directora aprueba.
+1. **Investiga.** Lee noticias reales de los blogs oficiales de Microsoft 365, Excel, Teams, SharePoint y Power BI, de OpenAI y de medios de tecnología, y se queda **solo con las que tratan de los productos con los que trabaja la empresa** (`config/brand.yaml` → `products`). Las noticias corporativas (despidos, resultados, demandas) se descartan.
+2. **Escribe.** Claude elige el formato del día (noticia, dato, tendencia, truco, prompt del día, antes vs ahora, mito o realidad) y escribe el guion, el texto del post y los hashtags. Todo gira alrededor de los productos: no vende, pero quien lo ve piensa "esto mi equipo debería saber usarlo".
+3. **Monta el vídeo en 3D.** Abre con la insignia 3D del formato (NOTICIA, TRUCO...) que llega volando y se queda en la esquina; detrás vive un plató 3D con el objeto del producto (una hoja de Excel que se convierte en gráfico, un sobre de Outlook, un mosaico de Teams, barras de Power BI...) y la cámara se mueve en cada escena. Encima, texto grande pensado para un público de 35 a 60 años, tarjetas que giran en 3D, clips de stock en pantallas flotantes, música y un diseño de sonido completo (whooshes en los cortes, golpe en la apertura, ticks en los contadores, tecleo en los prompts). Opcionalmente, voz en off con subtítulos.
+4. **Prepara 3 historias al día** con la misma estética (noticia, truco rápido, ¿sabías que?, pregunta o aviso del Reel) que se publican a horas al azar entre las 9:00 y las 21:00.
+5. **Prepara la publicación.** Cada vídeo lleva una portada con la misma plantilla que los anteriores (el color depende del formato, así el perfil queda ordenado) y una descripción con gancho, pasos prácticos, llamada a guardar o compartir, pregunta final, firma de la marca y 5 hashtags.
+6. **Pide aprobación por email** y solo publica el Reel que la directora aprueba. Las historias salen solas, pero las ve en el correo y puede cancelarlas.
 
 > **Instagram está desactivado por ahora.** Todo funciona igual, pero al aprobar un vídeo no se sube: a la hora de publicar llega un correo con el vídeo, la portada y el texto para subirlo a mano. Para activarlo, mira [Activar Instagram](#activar-instagram).
 
@@ -14,13 +15,19 @@ Cada día, sin que nadie toque nada:
 
 | Hora | Qué pasa |
 |---|---|
-| **02:00** | Se genera el vídeo del día. |
+| **02:00** | Se genera el Reel del día y las 3 historias, y se reparten las historias a horas al azar entre las 9:00 y las 21:00. |
 | **10:00** | Le llega un correo a la directora con el vídeo adjunto, la vista previa, el texto que se publicará y dos botones: **✅ Sí, publícalo** y **✏️ No, quiero otro**. |
 | Si aprueba | Se publica a las **19:00** (o al momento si aprueba más tarde) y recibe un aviso con el enlace al post. |
 | Si pide otro | Escribe en una frase qué quiere. A las **17:00** se genera una versión nueva según sus indicaciones y le llega **el mismo correo** otra vez. Puede repetirse las veces que quiera. Si lo pide después de las 17:00, la nueva versión llega al día siguiente a las 17:00. |
-| Si no responde | No se publica nada. A las 02:00 de la noche siguiente se genera el vídeo del día nuevo. |
+| Si no responde | No se publica el Reel. A las 02:00 de la noche siguiente se genera el del día nuevo. |
+| **9:00-21:00** | Cada historia sale a su hora. |
+| **15:00** | Se mira si ha salido algo importante sobre los productos; si lo hay, se añade una historia de **ÚLTIMA HORA** para la tarde y le llega un aviso. |
 
 **Encargar el vídeo de mañana.** En el mismo correo hay un botón **📌 Pedir el vídeo de mañana**. Escribe en una frase lo que quiere y, si le apetece, **adjunta archivos** (PDF, Word, PowerPoint, Excel, fotos) o pega enlaces. Esos archivos son la fuente principal del guion: las cifras y los hechos salen de ahí. Esa noche, a las 02:00, se genera el vídeo sobre su encargo y a las 10:00 le llega como siempre. También puede escribir en cualquier momento un correo con el asunto **MAÑANA** o mandar archivos sueltos ("te paso esto para algún vídeo"). Si pide otro vídeo con "No, quiero otro", también puede adjuntar archivos.
+
+**Historias.** En el correo de las 10:00 están las historias del día con su hora. Con **📲 Historias con esto** cuenta en una frase de qué las quiere y, si quiere, adjunta documentos o pega mensajes y enlaces: se preparan entre 1 y 3 historias sobre eso y le llega un correo con cómo quedan y a qué hora sale cada una. Con **🚫 Sin historias hoy** se cancelan las que quedan. También vale escribirlo con sus palabras ("no publiques más historias hoy").
+
+**Claude y tus horas de trabajo.** El agente usa Claude con tu suscripción y **nunca entre las 4:00 y las 14:00** (`config/brand.yaml` → `claude`). El límite de la suscripción va por ventanas de 5 horas que empiezan con la primera petición, así que cualquier uso a partir de las 4:00 seguiría abierto a las 9:00. Por eso la generación nocturna arranca antes de las 3:45, las historias que se piden por la mañana se preparan a partir de las 14:00, y los correos que no traen botón se interpretan sin Claude en esa franja. Publicar, enviar correos y montar vídeos no usa Claude, así que eso sí ocurre a cualquier hora.
 
 **Privacidad.** El repositorio es público, así que sus archivos **nunca se suben**: se quedan en el correo del agente y solo se descargan un momento al generar el vídeo. Lo que ella escribe se guarda **cifrado** en `data/state.json`. Los vídeos pendientes de revisión sí se guardan en *Releases*, que son visibles para quien entre al repositorio. Si eso te preocupa, con GitHub Pro (4 $/mes) el repositorio puede ser privado.
 
@@ -88,6 +95,22 @@ Mete entre 5 y 10 pistas `.mp3` libres de derechos en `assets/music/` (en `asset
 
 > Los vídeos se guardan en *Releases* del repositorio. Así el de las 02:00 sigue disponible a las 10:00, a las 17:00 o cuando se apruebe.
 
+### 6. Reloj fiable (recomendado, 5 minutos)
+GitHub lanza el workflow "cada 10 minutos" solo cuando le viene bien: en un repositorio nuevo puede pasar horas sin
+hacerlo, y entonces el correo de las 10:00 o las historias salen tarde. La solución gratuita es que un servicio externo
+le dé el aviso cada 10 minutos:
+
+1. **Token de GitHub.** GitHub → Settings → Developer settings → Fine-grained tokens → *Generate new token*.
+   Acceso solo a este repositorio, permiso **Actions: Read and write**, caducidad de un año. Copia el token.
+2. **Cuenta en <https://cron-job.org>** (gratis) → *Create cronjob*:
+   - URL: `https://api.github.com/repos/alfonsocubillo/TheTechbridge_reel/actions/workflows/reels.yml/dispatches`
+   - Cada 10 minutos.
+   - En *Advanced*: método **POST**; cabeceras `Accept: application/vnd.github+json`,
+     `Authorization: Bearer <tu token>` y `X-GitHub-Api-Version: 2022-11-28`; cuerpo `{"ref":"main"}`.
+3. Guarda. En la pestaña *Actions* de GitHub verás una ejecución cada 10 minutos.
+
+El horario interno de GitHub se queda como respaldo por si el servicio externo fallara.
+
 ### Activar Instagram
 1. Consigue el token del paso 1 y guárdalo como secreto `IG_ACCESS_TOKEN`. Para el renovado automático, añade también `GH_PAT`.
 2. Activa **Settings → Pages** → Source: **GitHub Actions**.
@@ -102,7 +125,10 @@ Desde ese momento, lo que apruebe la directora se publica solo con su portada. P
 - **Horarios**: `config/brand.yaml` → `review` (generar, enviar a revisión, rehacer y publicar).
 - **Portada**: `video/src/Cover.tsx`. Los colores de cada formato están en `config/brand.yaml` → `formats` → `accent`.
 - **Firma y hashtags de marca de la descripción**: `config/brand.yaml` → `caption`.
-- **Diseño**: `video/src/scenes/Scenes.tsx` (escenas) y `video/src/components/Layers.tsx` (fondo, grano, transiciones, subtítulos). Para previsualizar en local: `cd video && npm install && npm run studio`.
+- **Productos** (de qué trata todo el contenido) y su objeto 3D: `config/brand.yaml` → `products`.
+- **Historias** (cuántas al día, ventana de horas y revisión de última hora): `config/brand.yaml` → `stories`.
+- **Franja sin Claude**: `config/brand.yaml` → `claude`.
+- **Diseño**: `video/src/scenes/Scenes.tsx` (escenas), `video/src/three/` (plató, objetos 3D de cada producto, insignias), `video/src/Story.tsx` (historias) y `video/src/Reel.tsx` (montaje y diseño de sonido). Los efectos están en `assets/sfx`. Para previsualizar en local: `cd video && npm install && npm run studio`.
 - **Probar en local**: `python -m agent.main generate --storyboard ejemplo_storyboard.json` renderiza un guion fijo sin llamar a Claude. Para que escriba con Claude en local necesitas Claude Code instalado y con tu sesión iniciada.
 
 ## Coste aproximado al mes (1 vídeo/día)
@@ -111,6 +137,7 @@ Desde ese momento, lo que apruebe la directora se publica solo con su portada. P
 - ElevenLabs (opcional): plan Starter, unos 5 $/mes, suficiente para 30 vídeos.
 
 ## Notas importantes
+- **Licencia de Remotion.** Remotion, la librería que monta los vídeos, es gratis para particulares y empresas de hasta 3 personas. Si The TechBridge Solution tiene 4 o más empleados, necesita una licencia de empresa (<https://www.remotion.pro>).
 - **Veracidad.** El guionista solo puede usar cifras y novedades que aparezcan en la fuente. Los formatos "evergreen" (trucos, prompts, mitos) usan funciones reales de las herramientas. Es lo que protege la credibilidad de la cuenta.
 - **Voz sintética.** Meta pide etiquetar como "información de IA" el audio realista generado con IA. Los vídeos sin voz (motion graphics, texto y música) no tienen ese problema.
 - **Límites.** La API permite hasta 50 publicaciones cada 24 h; aquí se publica una.

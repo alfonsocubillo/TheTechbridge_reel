@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from .common import env, log
+from .common import claude_allowed, env, log
 
 SCENE_TYPES = {"hook", "stat", "broll", "list", "compare", "quote", "prompt", "outro"}
 
@@ -46,15 +46,23 @@ def _claude_env() -> dict:
             and (not k.startswith("CLAUDE") or k == "CLAUDE_CODE_OAUTH_TOKEN")}
 
 
-def claude(system: str, user: str, images: list[dict] | None = None) -> str:
-    """Hace una pregunta a Claude (sin herramientas) y devuelve el texto de la respuesta."""
+class ClaudeQuietHours(RuntimeError):
+    """Se intentó usar Claude dentro de la franja protegida del usuario."""
+
+
+def claude(system: str, user: str, images: list[dict] | None = None, fast: bool = False) -> str:
+    """Hace una pregunta a Claude (sin herramientas) y devuelve el texto de la respuesta.
+    fast=True usa un modelo más ligero para tareas pequeñas (elegir noticia, clasificar un correo)."""
+    if not claude_allowed():
+        raise ClaudeQuietHours("Franja protegida: el agente no usa Claude entre quiet_from y quiet_to (config/brand.yaml)")
     binary = _claude_bin()
     if not binary:
         raise RuntimeError("No encuentro Claude Code: instálalo o pon la ruta del ejecutable en CLAUDE_BIN")
     message = {"type": "user", "message": {"role": "user",
                                            "content": [*(images or []), {"type": "text", "text": user}]}}
     cmd = [binary, "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
-           "--model", env("CLAUDE_MODEL", "claude-opus-5-5"), "--system-prompt", system,
+           "--model", env("CLAUDE_FAST_MODEL", "claude-sonnet-5-5") if fast else env("CLAUDE_MODEL", "claude-opus-5-5"),
+           "--system-prompt", system,
            "--tools", "", "--strict-mcp-config", "--no-session-persistence"]
     with tempfile.TemporaryDirectory() as cwd:  # carpeta vacía para que no lea nada del proyecto
         p = subprocess.run(cmd, input=json.dumps(message, ensure_ascii=False) + "\n", capture_output=True,
@@ -80,14 +88,27 @@ def _json(text: str) -> dict:
     return json.loads(m.group(0))
 
 
-def pick_story(cfg: dict, fmt_key: str, news: list[dict], recent_titles: list[str]) -> dict:
-    """Elige la noticia que mejor encaja con la marca y el formato del día."""
+def products_text(cfg: dict) -> str:
+    return ", ".join(p["name"] for p in cfg.get("products", []))
+
+
+def positioning(cfg: dict) -> str:
+    return f"""Productos con los que trabaja la marca (y sobre los que forma a equipos): {products_text(cfg)}.
+Todo el contenido gira alrededor de estos productos. El objetivo NO es vender, pero quien lo vea tiene que
+pensar "esto mi equipo debería saber usarlo" y quedarse con que esta cuenta sabe de verdad de esto."""
+
+
+def pick_story(cfg: dict, fmt_key: str, news: list[dict], recent_titles: list[str]) -> dict | None:
+    """Elige una noticia que trate directamente de los productos de la marca. None si ninguna sirve."""
+    if not news:
+        return None
     fmt = cfg["formats"][fmt_key]
     listing = "\n".join(
         f"[{i}] {n['title']} — {n['summary'][:300]} ({n['source']})" for i, n in enumerate(news[:25])
     )
     system = "Eres el editor de una cuenta de Instagram profesional. Respondes solo con JSON."
     user = f"""Empresa: {cfg['brand']['about']}
+{positioning(cfg)}
 Audiencia: {cfg['audience']}
 Formato de hoy: {fmt_key} — {fmt['brief']}
 Temas publicados recientemente (no repetir): {recent_titles[-15:]}
@@ -95,12 +116,18 @@ Temas publicados recientemente (no repetir): {recent_titles[-15:]}
 Noticias candidatas:
 {listing}
 
-Elige la noticia con más potencial para enganchar a esta audiencia y que tenga relación con IA,
-productividad, Microsoft 365, herramientas de trabajo o transformación de empresas.
-Evita noticias demasiado técnicas, de nicho para desarrolladores o polémicas políticas.
-Responde: {{"index": <número>, "why": "<una frase>"}}"""
-    choice = _json(claude(system, user))
-    idx = int(choice["index"])
+Elige SOLO una noticia que trate directamente de alguno de esos productos y que le sirva a alguien que trabaja
+con ellos: una función nueva, un cambio que le afecta, una forma nueva de usarlos o un dato real de adopción.
+Descarta: noticias corporativas (despidos, resultados, bolsa, demandas, fichajes), política, modelos o
+benchmarks para desarrolladores, rondas de inversión y cualquier cosa que no se pueda contar como
+"esto cambia cómo trabajas con <producto>".
+Si ninguna cumple, responde {{"index": null}}.
+Responde: {{"index": <número o null>, "product": "<producto>", "why": "<una frase>"}}"""
+    choice = _json(claude(system, user, fast=True))
+    idx = choice.get("index")
+    if not isinstance(idx, int) or not 0 <= idx < len(news):
+        log.info("Ninguna noticia trata de los productos de la marca")
+        return None
     log.info("Noticia elegida [%d]: %s — %s", idx, news[idx]["title"], choice.get("why"))
     return news[idx]
 
@@ -109,8 +136,9 @@ STORYBOARD_SPEC = """
 Devuelve SOLO un JSON con esta forma:
 {
   "topic": "tema en 5-8 palabras",
+  "product": "el producto principal del vídeo, escrito exactamente como en la lista de productos",
   "cover": {"title": "título de la portada (ver reglas)", "highlight": "la palabra clave del título"},
-  "scenes": [ ... 5 a 7 escenas ... ],
+  "scenes": [ ... 5 o 6 escenas ... ],
   "caption": "descripción del post (ver reglas)",
   "hashtags": ["#...", "#...", "#...", "#..."]   // exactamente 4 (ver reglas)
 }
@@ -132,9 +160,17 @@ Reglas de estructura:
 - Escena 1 SIEMPRE "hook": tiene que parar el scroll en 1 segundo (curiosidad, contraste o consecuencia).
 - Última escena SIEMPRE "outro".
 - Alterna tipos para que el ritmo visual cambie; no repitas el mismo tipo dos veces seguidas.
-- Duración total al leerse: 25-40 segundos.
+- Duración total al leerse: 20-30 segundos (5 o 6 escenas). Mejor corto y completo que largo.
 - "broll": 2-4 palabras en inglés, visual y cinematográfico (ej: "city night timelapse", "hands typing laptop dark",
   "office team meeting glass", "data center lights"). Evita caras en primer plano y logotipos.
+
+Reglas para que funcione en Instagram (público de 35 a 60 años que trabaja en empresas):
+- El gancho nombra el producto o una situación de oficina reconocible en las primeras palabras
+  (ej: "Si usas Excel a diario...", "Tu bandeja de Outlook no tiene por qué..."). Nada de preguntas vagas.
+- Promete un beneficio concreto y creíble (tiempo, errores, tranquilidad), sin exageraciones ni sensacionalismo.
+- Una sola idea por vídeo. Frases cortas que se lean de un vistazo, como si las leyera alguien con prisa.
+- Enseña el "cómo": un paso, un prompt o un antes/después concreto que se pueda probar hoy mismo.
+- El cierre ("outro") invita a guardar o compartir el vídeo, nunca a comprar ni a contactar.
 
 Reglas de contenido (MUY IMPORTANTES):
 - Los hechos, cifras, fechas y nombres de productos deben salir de la fuente proporcionada o ser conocimiento
@@ -142,6 +178,7 @@ Reglas de contenido (MUY IMPORTANTES):
 - No vendas: no menciones cursos, servicios ni "contáctanos". El valor es el contenido en sí.
 - Nada de clichés de IA ("en el mundo actual", "revolucionario", "descubre", "sumérgete", emojis en exceso).
 - Habla a alguien que dirige o trabaja en una empresa, con ejemplos concretos de oficina.
+- El vídeo trata SIEMPRE de uno de los productos de la lista y de cómo usarlo mejor en el trabajo.
 
 Reglas de la portada ("cover"):
 - Es lo que se ve en la cuadrícula del perfil: tiene que entenderse sin ver el vídeo y dar ganas de abrirlo.
@@ -176,7 +213,9 @@ def plan_from_feedback(cfg: dict, feedback: str, news: list[dict], materials: st
     listing = "\n".join(f"[{i}] {n['title']} ({n['source']})" for i, n in enumerate(news[:25])) or "(ninguna)"
     system = "Eres el editor de una cuenta de Instagram profesional. Respondes solo con JSON."
     mat = f"\n\nAdemás ha aportado este material (será la fuente principal):\n{materials[:3000]}" if materials else ""
-    user = f"""La directora pide esto para el próximo vídeo:
+    user = f"""{positioning(cfg)}
+
+La directora pide esto para el próximo vídeo:
 \"\"\"{feedback or ('(sin indicaciones: haz el vídeo a partir del material)' if materials else '(no ha dado detalles: haz algo claramente distinto al anterior)')}\"\"\"
 
 {mat}
@@ -192,7 +231,7 @@ Elige el formato que mejor encaje con lo que pide. Si ha aportado material, ese 
 Si no hay material y pide una novedad o tema de actualidad, indica la noticia que encaje; si no encaja
 ninguna, usa un formato que no necesite noticia.
 Responde: {{"format": "<clave>", "news_index": <número o null>}}"""
-    plan = _json(claude(system, user))
+    plan = _json(claude(system, user, fast=True))
     fmt = plan.get("format") if plan.get("format") in cfg["formats"] else "truco"
     idx = plan.get("news_index")
     story = news[int(idx)] if isinstance(idx, int) and 0 <= idx < len(news) else None
@@ -206,7 +245,8 @@ def write_storyboard(cfg: dict, fmt_key: str, story: dict | None, article: str, 
     fmt = cfg["formats"][fmt_key]
     system = (
         "Eres guionista y director creativo de vídeos cortos verticales para una marca profesional. "
-        "Escribes en español de España, con ritmo, criterio y precisión. Respondes solo con JSON válido."
+        "Escribes en español de España, con ritmo, criterio y precisión. Sabes qué hace que un vídeo se guarde "
+        "y se comparta. Respondes solo con JSON válido."
     )
     if story:
         source = f"""FUENTE (base de todos los hechos):
@@ -227,6 +267,7 @@ si hay imágenes, se te muestran adjuntas y puedes describir lo que se ve en ell
         source = ("Este formato no depende de una noticia. Usa solo funciones y prácticas reales y "
                   "estables de las herramientas; si dudas de que algo exista, no lo menciones.")
     user = f"""Marca: {cfg['brand']['name']} — {cfg['brand']['about']}
+{positioning(cfg)}
 Audiencia: {cfg['audience']}
 Tono: {cfg['tone']}
 Formato: {fmt_key} ("{fmt['label']}") — {fmt['brief']}
@@ -289,3 +330,85 @@ def validate(sb: dict) -> None:
         words = len(str(cover.get("title") or "").split())
         if not 2 <= words <= 8:
             raise ValueError(f"cover.title tiene {words} palabras; deben ser 3-6")
+
+
+# ───────────────────────── Historias de Instagram ─────────────────────────
+
+STORY_KINDS = ("noticia", "truco", "dato", "pregunta", "reel", "ultima_hora")
+
+STORY_SPEC = """
+Devuelve SOLO un JSON: {"stories": [ ... ]}
+Cada historia:
+{"kind": "noticia | truco | dato | pregunta | reel | ultima_hora",
+ "product": "producto de la lista, escrito igual",
+ "title": "frase principal, máx 8 palabras",
+ "highlight": "una palabra del título, escrita igual",
+ "body": "el detalle útil en 1-2 frases, máx 24 palabras",
+ "cta": "remate corto, máx 6 palabras"}
+
+Reglas:
+- Se ven 7-10 segundos en el móvil: el título se entiende solo y el cuerpo añade el dato o el paso concreto.
+- Todo trata de los productos de la lista y de cómo usarlos mejor en el trabajo.
+- "noticia" y "ultima_hora": solo con una noticia real de las proporcionadas; cuenta qué cambia para quien usa el producto.
+- "truco": un truco real y comprobable (atajo, función, prompt corto).
+- "dato": un dato real con su fuente en el cuerpo ("según Microsoft..."). Nunca inventes cifras.
+- "pregunta": una pregunta fácil de responder por mensaje sobre cómo trabajan (ej: "¿Usas ya Copilot en Teams?").
+  El cta invita a responder por mensaje.
+- "reel": anuncia el Reel de hoy con curiosidad, sin destriparlo. El cta remite al perfil ("Lo tienes en el perfil").
+- No vendas ni menciones cursos o servicios. Nada de clichés de IA ni emojis.
+"""
+
+
+def validate_stories(data: dict, expected: int | None = None) -> list[dict]:
+    stories = data.get("stories")
+    if not isinstance(stories, list) or not stories:
+        raise ValueError("falta la lista 'stories'")
+    if expected and len(stories) != expected:
+        raise ValueError(f"se pedían {expected} historias y llegaron {len(stories)}")
+    for s in stories:
+        if s.get("kind") not in STORY_KINDS:
+            raise ValueError(f"tipo de historia desconocido: {s.get('kind')}")
+        if not s.get("title") or len(str(s["title"]).split()) > 10:
+            raise ValueError("cada historia necesita un título de máximo 8 palabras")
+        if len(str(s.get("body", "")).split()) > 34:
+            raise ValueError("el cuerpo de una historia pasa de 24 palabras")
+    return stories
+
+
+def write_stories(cfg: dict, plan: list[str] | None, news: list[dict], reel_topic: str | None = None,
+                  recent_titles: list[str] = (), materials: str = "", images: list[dict] | None = None,
+                  feedback: str | None = None) -> list[dict]:
+    """plan = tipos de historia en orden (p. ej. ["noticia", "truco", "reel"]). Sin plan (petición con material)
+    el guionista decide entre 1 y 3 historias a partir de lo que ha mandado la directora."""
+    listing = "\n".join(f"[{i}] {n['title']} — {n['summary'][:300]} ({n['source']}, {n['url']})"
+                        for i, n in enumerate(news[:10])) or "(ninguna)"
+    if plan:
+        ask = (f"Escribe {len(plan)} historias, en este orden de tipos: {', '.join(plan)}. "
+               "Si un tipo 'noticia' o 'ultima_hora' no tiene una noticia que encaje de verdad, cámbialo por 'dato' o 'truco'.")
+    else:
+        ask = ("Escribe entre 1 y 3 historias a partir del material y la petición de la directora "
+               "(tipos: truco, dato, pregunta, o noticia si el material es una novedad).")
+    mat = f"\nMATERIAL APORTADO POR LA DIRECTORA (fuente principal):\n{materials[:6000]}\n" if materials else ""
+    user = f"""Marca: {cfg['brand']['name']} — {cfg['brand']['about']}
+{positioning(cfg)}
+Audiencia: {cfg['audience']}
+Tono: {cfg['tone']}
+Reel de hoy: {reel_topic or '(no hay)'}
+Temas recientes (no repetir): {list(recent_titles)[-15:]}
+
+Noticias reales disponibles:
+{listing}
+{mat}{feedback_block(feedback)}
+{ask}
+{STORY_SPEC}"""
+    system = ("Eres el editor de historias de Instagram de una marca profesional. Escribes en español de España, "
+              "frases cortas y útiles. Respondes solo con JSON válido.")
+    last_error = None
+    for attempt in range(3):
+        prompt = user if not last_error else f"{user}\n\nTu respuesta anterior falló la validación: {last_error}. Corrígelo."
+        try:
+            return validate_stories(_json(claude(system, prompt, images=images)), len(plan) if plan else None)
+        except (ValueError, KeyError, json.JSONDecodeError) as e:
+            last_error = str(e)
+            log.warning("Historias inválidas (intento %d): %s", attempt + 1, e)
+    raise RuntimeError(f"No se pudieron escribir las historias: {last_error}")

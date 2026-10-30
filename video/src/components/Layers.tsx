@@ -134,13 +134,17 @@ export const FilmFinish: React.FC = () => {
   const f = useCurrentFrame();
   return (
     <AbsoluteFill style={{pointerEvents: 'none'}}>
-      <svg width="1080" height="1920" style={{position: 'absolute', opacity: 0.09, mixBlendMode: 'overlay'}}>
-        <filter id="grain">
-          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed={f % 12} stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#grain)" />
-      </svg>
+      {/* Textura de ruido ya generada (public/grain.png) que salta de sitio cada fotograma: mismo efecto que
+          calcular ruido en cada fotograma, pero mucho más barato sin tarjeta gráfica */}
+      <AbsoluteFill
+        style={{
+          backgroundImage: `url(${staticFile('grain.png')})`,
+          backgroundSize: '512px 512px',
+          backgroundPosition: `${(f * 137) % 512}px ${(f * 263) % 512}px`,
+          opacity: 0.1,
+          mixBlendMode: 'overlay',
+        }}
+      />
       <AbsoluteFill style={{background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)'}} />
     </AbsoluteFill>
   );

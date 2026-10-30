@@ -1,7 +1,9 @@
 name: Reels con aprobación
 
 # Cada 10 minutos se comprueba el correo y la hora (Madrid) y se decide qué toca:
-#   02:00 generar · 10:00 enviar a revisión · 17:00 rehacer si lo ha pedido · publicar si lo ha aprobado
+#   02:00 generar Reel + 3 historias · 10:00 enviar a revisión · 17:00 rehacer si lo ha pedido
+#   publicar si lo ha aprobado · historias a horas al azar de 9:00 a 21:00 · 15:00 última hora
+# Claude solo se usa fuera de la franja protegida (config/brand.yaml → claude).
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -10,7 +12,12 @@ on:
       force:
         description: "Forzar una acción (vacío = automático)"
         type: choice
-        options: ["", "generate", "regenerate", "email", "publish"]
+        options: ["", "generate", "regenerate", "email", "publish", "stories", "story"]
+        default: ""
+      mode:
+        description: "Con 'stories': news (última hora) o request (las pedidas por correo)"
+        type: choice
+        options: ["", "news", "request"]
         default: ""
 
 concurrency:
@@ -47,6 +54,7 @@ jobs:
     timeout-minutes: 10
     outputs:
       action: ${{ steps.tick.outputs.action }}
+      mode: ${{ steps.tick.outputs.mode }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,20 +67,20 @@ jobs:
           pip install -q -r requirements.txt
           sudo apt-get install -y -qq ffmpeg > /dev/null
       - id: tick
-        run: python -m agent.scheduler tick ${{ inputs.force && format('--force {0}', inputs.force) || '' }}
+        run: python -m agent.scheduler tick ${{ inputs.force && format('--force {0}', inputs.force) || '' }} ${{ inputs.mode && format('--mode {0}', inputs.mode) || '' }}
       - name: Guardar estado
         run: |
           git config user.name "reels-bot"
           git config user.email "reels-bot@users.noreply.github.com"
           git add data/state.json data/history.json
-          git diff --cached --quiet || (git commit -qm "Estado: ${{ steps.tick.outputs.action }}" && git push)
+          git diff --cached --quiet || (git commit -qm "Estado: ${{ steps.tick.outputs.action }}" && git pull -q --rebase --autostash && git push)
 
   # Paso pesado: investigar, escribir y renderizar (02:00, o 17:00 si pidió otro)
   generate:
     needs: decide
     if: needs.decide.outputs.action == 'generate' || needs.decide.outputs.action == 'regenerate'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,6 +105,97 @@ jobs:
           git config user.email "reels-bot@users.noreply.github.com"
           git add data/state.json
           git commit -qm "Vídeo generado (${{ needs.decide.outputs.action }})" || exit 0
+          git pull -q --rebase --autostash && git push
+
+  # Historias fuera de la tanda nocturna: las que pide la directora o una de última hora (usa Claude)
+  stories:
+    needs: decide
+    if: needs.decide.outputs.action == 'stories'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-color-emoji > /dev/null
+          pip install -q -r requirements.txt
+          cd video && npm install --no-audit --no-fund && npx remotion browser ensure
+      - name: Preparar historias
+        run: python -m agent.scheduler stories --mode ${{ needs.decide.outputs.mode }}
+      - name: Guardar estado
+        run: |
+          git config user.name "reels-bot"
+          git config user.email "reels-bot@users.noreply.github.com"
+          git add data/state.json
+          git commit -qm "Historias (${{ needs.decide.outputs.mode }})" || exit 0
+          git pull -q --rebase --autostash && git push
+
+  # Publicar una historia en Instagram (solo con INSTAGRAM_PUBLISH = true)
+  story:
+    needs: decide
+    if: needs.decide.outputs.action == 'story'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -q -r requirements.txt
+      - id: due
+        name: Qué historia toca
+        run: |
+          read TAG FILE <<< "$(python -m agent.scheduler due-story | tail -n 1)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+      - name: Descargar la historia
+        if: steps.due.outputs.tag != ''
+        run: |
+          mkdir -p site
+          gh release download "${{ steps.due.outputs.tag }}" --repo "${{ github.repository }}" --pattern "${{ steps.due.outputs.file }}" --dir site
+          NAME="${{ steps.due.outputs.tag }}-${{ steps.due.outputs.file }}"
+          mv "site/${{ steps.due.outputs.file }}" "site/$NAME"
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          echo "<!doctype html><title>reels</title>" > site/index.html
+      - if: steps.due.outputs.tag != ''
+        uses: actions/configure-pages@v5
+      - if: steps.due.outputs.tag != ''
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        if: steps.due.outputs.tag != ''
+        uses: actions/deploy-pages@v4
+      - name: Publicar la historia
+        if: steps.due.outputs.tag != ''
+        run: |
+          URL="${{ steps.deployment.outputs.page_url }}$NAME"
+          for i in $(seq 1 30); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' "$URL")" = "200" ] && break
+            echo "Esperando a que la historia esté online..."; sleep 10
+          done
+          python -m agent.scheduler story-publish --video-url "$URL"
+      - name: Guardar estado
+        if: always()
+        run: |
+          git config user.name "reels-bot"
+          git config user.email "reels-bot@users.noreply.github.com"
+          git add data/state.json
+          git commit -qm "Historia publicada" || exit 0
           git pull -q --rebase --autostash && git push
 
   # Publicación en Instagram (solo si la directora lo ha aprobado)
