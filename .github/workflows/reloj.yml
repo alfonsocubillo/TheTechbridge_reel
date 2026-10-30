@@ -1,0 +1,43 @@
+name: Reloj (cada 10 minutos)
+
+# El cron de GitHub se retrasa horas cuando hay carga (el "*/10" de reels.yml llegaba a ir cada 6-7 h).
+# Este reloj lanza "Reels con aprobación" cada 10 minutos de verdad: un job que dura ~5 h 40 min y, al
+# terminar, se vuelve a lanzar a sí mismo. Los workflow_dispatch hechos con GITHUB_TOKEN sí arrancan workflows.
+# El cron de abajo solo sirve para resucitarlo si la cadena se rompiera. Para pararlo: desactiva este workflow.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */3 * * *"
+
+concurrency:
+  group: reloj
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Lanzar la pasada cada 10 minutos
+        run: |
+          end=$(( $(date +%s) + 340*60 ))
+          while [ "$(date +%s)" -lt "$end" ]; do
+            # Si el workflow principal está desactivado (pausa manual), el reloj no hace nada
+            if [ "$(gh api repos/$GH_REPO/actions/workflows/reels.yml -q .state)" = "active" ]; then
+              gh workflow run reels.yml && echo "$(date -u +%H:%M) pasada lanzada"
+            fi
+            sleep 600
+          done
+      - name: Relanzar el reloj
+        if: always()
+        run: |
+          # Solo si no hay otro reloj ya esperando
+          pending=$(gh run list -w reloj.yml --status queued --json databaseId -q 'length')
+          [ "$pending" = "0" ] && gh workflow run reloj.yml || echo "Ya hay un reloj en cola"
