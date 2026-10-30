@@ -1,26 +1,25 @@
 {
   "item": {
-    "date": "2026-10-29T22:14:35+00:00",
+    "date": "2026-10-30T01:29:20+00:00",
     "format": "noticia",
     "format_label": "ACABA DE SALIR",
     "topic": "Microsoft ofrece salida voluntaria a 60.000 empleados",
     "source_url": "https://www.theverge.com/tech/1022023/microsoft-exit-offer-layoffs-notepad",
     "source_name": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
-    "caption": "Microsoft acaba de decir en voz alta lo que muchas empresas solo piensan sobre la IA y el empleo.\n\nMicrosoft ofrece salida voluntaria a unos 60.000 empleados en Estados Unidos, Reino Unido, Canadá e India, una cuarta parte de su plantilla. Tienen hasta diciembre para decidir. Llega meses después de despedir a 4.800 personas y con la plantilla bajando por primera vez en una década.\n\nLa lógica la explicó Satya Nadella hace casi dos años: el coste total en personas bajará, el coste por persona subirá y habrá más capacidad de IA por empleado. Menos gente, mejor equipada.\n\nSi diriges un equipo, la idea práctica es esta: no midas solo cuántas personas tienes, mide qué puede hacer cada una con las herramientas que le das. Repasa hoy qué tareas repetitivas de tu equipo podría asumir la IA y en qué invertiría ese tiempo cada persona.\n\nCompártelo con quien está decidiendo la plantilla del año que viene.\n\n¿Crees que tu sector seguirá el mismo camino en los próximos dos años?\n\nFuente: The Verge\n\nCada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution\n\n#TheTechBridgeSolution #Microsoft #inteligenciaartificial #empleo #liderazgo",
-    "cover_title": "Microsoft recorta plantilla por la IA",
+    "caption": "Una de las empresas que más IA vende acaba de decidir que necesita menos gente. Y no lo esconde.\n\nMicrosoft ha ofrecido una salida voluntaria a unos 60.000 empleados en Estados Unidos, Reino Unido, Canadá e India, casi un cuarto de su plantilla. Llega meses después de despedir a 4.800 personas, y su plantilla ha bajado por primera vez en diez años: de 228.000 a unos 223.000.\n\nEl motivo es explícito: reducir costes de personal para seguir invirtiendo en infraestructura de IA. Satya Nadella lo resumió así: menos coste total en personas, más coste por persona y más potencia de IA para quien se queda.\n\nSi diriges un equipo, la idea práctica es esta: revisa qué tareas repetitivas hace hoy tu gente (informes, actas, resúmenes de correo) y pregúntate cuáles podría asumir Copilot o ChatGPT. No para recortar, sino para que cada persona dedique su tiempo a lo que realmente aporta.\n\nCompártelo con quien está planificando el equipo del año que viene.\n\n¿En tu empresa la IA se está viendo como herramienta o como sustituto?\n\nFuente: The Verge\n\nCada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution\n\n#TheTechBridgeSolution #Microsoft #inteligenciaartificial #empleo #liderazgo",
+    "cover_title": "Microsoft quiere menos empleados",
     "stock_ids": [
-      "pixabay:261898",
-      "pixabay:45985",
-      "pixabay:1656"
+      "pixabay:257777",
+      "pixabay:256056",
+      "pixabay:14088"
     ],
     "voice": false,
-    "id": "1029-2314",
-    "tag": "reel-20261029-2314",
-    "day": "2026-10-29",
+    "id": "1030-0229",
+    "tag": "reel-20261030-0229",
+    "day": "2026-10-30",
     "kind": "nightly",
     "attempt": 1,
-    "status": "emailed",
-    "private": null,
-    "emailed_at": "2026-10-29T23:16+01:00"
+    "status": "generated",
+    "private": null
   }
 }
