@@ -65,7 +65,7 @@
       "id": "1030-1355-2",
       "day": "2026-10-30",
       "at": "20:43",
-      "status": "scheduled",
+      "status": "published",
       "origin": "nightly",
       "kind": "pregunta",
       "label": "PREGUNTA",
@@ -75,7 +75,9 @@
       "file": "story2.mp4",
       "thumb": "story2.jpg",
       "source_url": null,
-      "source": null
+      "source": null,
+      "media_id": "17929083402425990",
+      "published_at": "2026-10-30T20:52+01:00"
     },
     {
       "id": "news10301532-0",
