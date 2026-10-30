@@ -20,8 +20,9 @@
     "day": "2026-10-30",
     "kind": "nightly",
     "attempt": 1,
-    "status": "generated",
-    "private": null
+    "status": "emailed",
+    "private": null,
+    "emailed_at": "2026-10-30T14:09+01:00"
   },
   "stories": [
     {
