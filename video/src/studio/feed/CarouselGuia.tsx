@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
-import {FEED, FeedBg, Grain, Hi, INTER, MONO, POP, Lockup, OutlineGlyph, PageCount, Rail, Spaced, TIGHT, TagPill, family, fit} from '../kit';
+import {BRAND, FEED, FeedBg, theme, Grain, Hi, INTER, MONO, POP, Lockup, OutlineGlyph, PageCount, Rail, Spaced, TIGHT, TagPill, family, fit} from '../kit';
 import type {SlideProps} from './types';
 
 /**
@@ -11,12 +11,12 @@ import type {SlideProps} from './types';
  *   text    → {kicker, title, highlight?, body}
  *   closing → {kicker, title, highlight?, text, buttons?}
  */
-export const CarouselGuia: React.FC<SlideProps> = ({slide, index, total, family: famKey}) => {
-  const fam = family(famKey);
+export const CarouselGuia: React.FC<SlideProps> = ({slide, index, total, family: famKey, app}) => {
+  const fam = family(famKey, app);
   const s = slide as Record<string, any>;
   return (
     <AbsoluteFill style={{background: FEED.bg, overflow: 'hidden'}}>
-      <FeedBg glow={index % 2 ? '#123A7A' : '#0E2E66'} flip={index % 2 === 0} />
+      <FeedBg glow={app ? theme(app).deep : index % 2 ? BRAND.deep : BRAND.blue} flip={index % 2 === 0} />
       {s.kind === 'item' && <Item s={s} accent={fam.accent} />}
       {s.kind === 'text' && <Text s={s} accent={fam.accent} />}
       {s.kind === 'closing' && <Closing s={s} accent={fam.accent} />}

@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Cue, Grain, INTER, MONO, Music, SfxTrack, UNB, clamp, fit} from '../kit';
+import {BRAND, Cue, Grain, INTER, MONO, Music, SfxTrack, UNB, clamp, fit, theme} from '../kit';
 import {Keycap} from './StoryStills';
 
 /**
@@ -38,19 +38,25 @@ export const StoryVideo: React.FC<StoryVideoProps> = (p) => {
 
 // ───────────────────────── Pulso ─────────────────────────
 
+// Variaciones de la paleta de la marca (azules, cielo y violeta secundario). Si la historia va de una app, se usa su color.
 const PALETTES = [
-  ['#FF3D71', '#FF9F1C', '#1A0710'],
-  ['#7C3AED', '#06B6D4', '#0C0620'],
-  ['#00C2A8', '#B9F542', '#04140F'],
-  ['#2563EB', '#F472B6', '#060B22'],
+  [BRAND.blue, BRAND.sky, '#03132A'],
+  [BRAND.deep, BRAND.light, '#020D1E'],
+  [BRAND.light, BRAND.violetLight, '#07122B'],
+  [BRAND.blue, '#FFFFFF', '#0A2448'],
 ];
+const paletteFor = (palette: number, app?: string | null) => {
+  if (!app) return PALETTES[palette % PALETTES.length];
+  const t = theme(app);
+  return [t.deep, t.accent, '#05101E'];
+};
 
 const P = {hookEnd: 80, visEnd: 230, payEnd: 330};
 
 const Pulso: React.FC<StoryVideoProps> = ({data, bpm = 120, palette = 0}) => {
   const f = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
-  const [a, b, dark] = PALETTES[palette % PALETTES.length];
+  const [a, b, dark] = paletteFor(palette, data.app);
   const beat = (60 / bpm) * fps;
   const pulse = Math.exp(-((f % beat) / beat) * 5);
   const words = String(data.hook ?? '').split(' ');
@@ -178,7 +184,7 @@ const Visual: React.FC<{v: Record<string, any>; from: number; a: string; b: stri
 
 // ───────────────────────── Terminal ─────────────────────────
 
-const GREEN = '#4ADE80';
+let GREEN: string = BRAND.light;
 
 type TL = {cmd: string; out?: string[]};
 
@@ -194,6 +200,7 @@ const terminalTimeline = (lines: TL[]) => {
 };
 
 const Terminal: React.FC<StoryVideoProps> = ({data}) => {
+  GREEN = theme(data.app).accent;
   const f = useCurrentFrame();
   const {durationInFrames, fps} = useVideoConfig();
   const lines: TL[] = data.lines ?? [];
@@ -202,13 +209,13 @@ const Terminal: React.FC<StoryVideoProps> = ({data}) => {
   const up = spring({frame: f - explainAt, fps, config: {damping: 16}});
   const blink = Math.floor(f / 15) % 2 === 0;
   return (
-    <AbsoluteFill style={{background: '#05080A', overflow: 'hidden'}}>
+    <AbsoluteFill style={{background: '#030C18', overflow: 'hidden'}}>
       <AbsoluteFill style={{backgroundImage: 'repeating-linear-gradient(0deg, #ffffff06 0 2px, transparent 2px 6px)'}} />
       <AbsoluteFill style={{background: `radial-gradient(ellipse at 50% 40%, ${GREEN}1f, transparent 60%)`}} />
       <div style={{position: 'absolute', left: 80, top: 270, fontFamily: MONO, fontWeight: 700, fontSize: 30, color: GREEN, letterSpacing: 3}}>{'>'} {data.tag ?? 'TERMINAL'}</div>
       <div style={{position: 'absolute', left: 80, right: 80, top: 330, fontFamily: INTER, fontWeight: 800, fontSize: fit(String(data.title), 920, 74, 50, 3, 0.55), lineHeight: 1.1, color: '#fff'}}>{data.title}</div>
-      <div style={{position: 'absolute', left: 60, right: 60, top: 640, borderRadius: 26, background: '#0C1214', border: '2px solid #1F2A2E', boxShadow: `0 0 80px ${GREEN}22`, overflow: 'hidden', transform: `translateY(${-up * 30}px) scale(${1 - up * 0.05})`}}>
-        <div style={{display: 'flex', gap: 12, padding: '22px 26px', background: '#141C1F'}}>
+      <div style={{position: 'absolute', left: 60, right: 60, top: 640, borderRadius: 26, background: '#08131F', border: '2px solid #1D2F44', boxShadow: `0 0 80px ${GREEN}22`, overflow: 'hidden', transform: `translateY(${-up * 30}px) scale(${1 - up * 0.05})`}}>
+        <div style={{display: 'flex', gap: 12, padding: '22px 26px', background: '#0E1C2C'}}>
           {['#FF5F57', '#FEBC2E', '#28C840'].map((c) => <div key={c} style={{width: 20, height: 20, borderRadius: '50%', background: c}} />)}
           <div style={{marginLeft: 20, fontFamily: MONO, fontSize: 24, color: '#6B7C80'}}>{data.shell ?? 'PowerShell'}</div>
         </div>
@@ -230,7 +237,7 @@ const Terminal: React.FC<StoryVideoProps> = ({data}) => {
         </div>
       </div>
       {f >= explainAt && (
-        <div style={{position: 'absolute', left: 80, right: 80, top: 1260 - up * 60, opacity: up, padding: '36px 40px', borderRadius: 26, background: GREEN, color: '#04210F'}}>
+        <div style={{position: 'absolute', left: 80, right: 80, top: 1260 - up * 60, opacity: up, padding: '36px 40px', borderRadius: 26, background: GREEN, color: '#03132A'}}>
           <div style={{fontFamily: MONO, fontWeight: 800, fontSize: 26, letterSpacing: 3}}>QUÉ HACE</div>
           <div style={{marginTop: 12, fontFamily: INTER, fontWeight: 700, fontSize: fit(String(data.explain), 840, 44, 32, 5, 0.53), lineHeight: 1.32}}>{data.explain}</div>
         </div>
@@ -254,19 +261,19 @@ const Quiz: React.FC<StoryVideoProps> = ({data}) => {
   const ans = Number(data.answer ?? 0);
   const revealed = f >= Q.reveal;
   const count = 3 - Math.floor((f - Q.count) / 30);
-  const BG = '#FFE14D';
-  const INK = '#151208';
+  const BG = data.app ? theme(data.app).deep : BRAND.blue;
+  const INK = '#03132A';
   return (
     <AbsoluteFill style={{background: BG, overflow: 'hidden'}}>
-      <AbsoluteFill style={{backgroundImage: `radial-gradient(${INK}14 3px, transparent 3px)`, backgroundSize: '44px 44px'}} />
-      <div style={{position: 'absolute', left: 80, top: 270, padding: '12px 26px', borderRadius: 999, background: INK, color: BG, fontFamily: UNB, fontWeight: 900, fontSize: 32}}>QUIZ TECH</div>
-      <div style={{position: 'absolute', left: 80, right: 80, top: 370, fontFamily: UNB, fontWeight: 900, fontSize: fit(String(data.question), 920, 76, 50, 5, 0.78), lineHeight: 1.12, color: INK,
+      <AbsoluteFill style={{backgroundImage: 'radial-gradient(#ffffff22 3px, transparent 3px)', backgroundSize: '44px 44px'}} />
+      <div style={{position: 'absolute', left: 80, top: 270, padding: '12px 26px', borderRadius: 999, background: '#fff', color: INK, fontFamily: UNB, fontWeight: 900, fontSize: 32}}>QUIZ TECH</div>
+      <div style={{position: 'absolute', left: 80, right: 80, top: 370, fontFamily: UNB, fontWeight: 900, fontSize: fit(String(data.question), 920, 76, 50, 5, 0.78), lineHeight: 1.12, color: '#fff',
         transform: `scale(${spring({frame: f - 4, fps, config: {damping: 12}})})`, transformOrigin: 'left top'}}>{data.question}</div>
       <div style={{position: 'absolute', left: 80, right: 80, top: 860, display: 'flex', flexDirection: 'column', gap: 30}}>
         {opts.slice(0, 3).map((o, i) => {
           const s = spring({frame: f - (Q.opts + i * 10), fps, config: {damping: 13}});
           const right = i === ans;
-          const bg = revealed ? (right ? '#16A34A' : '#ffffff') : '#ffffff';
+          const bg = revealed && right ? INK : '#ffffff';
           return (
             <div key={i} style={{display: 'flex', alignItems: 'center', gap: 26, padding: '30px 34px', borderRadius: 28, background: bg, border: `5px solid ${INK}`, boxShadow: `10px 10px 0 ${INK}`,
               transform: `translateX(${(1 - s) * 1100}px) scale(${revealed && right ? 1 + 0.04 * Math.sin((f - Q.reveal) / 4) * Math.exp(-(f - Q.reveal) / 30) : 1})`, opacity: revealed && !right ? 0.4 : 1}}>
@@ -281,7 +288,7 @@ const Quiz: React.FC<StoryVideoProps> = ({data}) => {
           transform: `scale(${1.3 - ((f - Q.count) % 30) / 100})`}}>{count}</div>
       )}
       {f >= Q.explain && (
-        <div style={{position: 'absolute', left: 80, right: 80, top: 1400, fontFamily: INTER, fontWeight: 700, fontSize: fit(String(data.explain), 920, 40, 30, 4, 0.53), lineHeight: 1.3, color: INK, opacity: interpolate(f, [Q.explain, Q.explain + 12], [0, 1], clamp)}}>
+        <div style={{position: 'absolute', left: 80, right: 80, top: 1400, fontFamily: INTER, fontWeight: 700, fontSize: fit(String(data.explain), 920, 40, 30, 4, 0.53), lineHeight: 1.3, color: '#fff', opacity: interpolate(f, [Q.explain, Q.explain + 12], [0, 1], clamp)}}>
           {data.explain}
         </div>
       )}

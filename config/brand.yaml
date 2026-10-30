@@ -25,20 +25,69 @@ tone: >
   Frases cortas, datos concretos, curiosidad. Cero venta directa: el objetivo es que el vídeo
   interese tanto que la gente siga la cuenta por sí misma.
 
-# Paletas de acento. Cada formato tiene la suya (campo `accent` de cada formato), así el vídeo y la portada
-# comparten color y en el perfil se reconoce cada formato de un vistazo.
+# Colores de la marca (thetechbridgesolution.com): degradado #015DAC → #267FCB, carbón #282828 y violeta #5F2DDE
+# como secundario puntual. Cada formato usa una variación de esta paleta (campo `accent` de cada formato).
+# Si el contenido va de una aplicación con color propio (Excel, Teams…), se usa el de esa aplicación (app_colors).
 visual:
-  background: "#070B18"
-  text: "#F5F7FF"
-  muted: "#9AA4C7"
+  background: "#03132A"
+  text: "#F5F9FF"
+  muted: "#93A6C2"
   accents:
-    - ["#3B82F6", "#22D3EE"]   # azul eléctrico → cian
-    - ["#7C3AED", "#3B82F6"]   # violeta → azul
-    - ["#06B6D4", "#10B981"]   # cian → verde
-    - ["#F59E0B", "#EF4444"]   # ámbar → rojo (para "dato impactante")
-    - ["#6366F1", "#EC4899"]   # índigo → magenta
-    - ["#0EA5E9", "#A855F7"]   # celeste → púrpura
-    - ["#22C55E", "#EAB308"]   # verde → amarillo
+    - ["#015DAC", "#267FCB"]   # degradado de la web
+    - ["#267FCB", "#5AAEEE"]   # azul marca → azul claro
+    - ["#1C5B92", "#267FCB"]   # azul profundo → azul marca
+    - ["#267FCB", "#A9D4F7"]   # azul marca → cielo (para "dato")
+    - ["#015DAC", "#5F2DDE"]   # azul profundo → violeta secundario
+    - ["#267FCB", "#9D86F5"]   # azul marca → violeta claro
+    - ["#5AAEEE", "#015DAC"]   # azul claro → profundo
+  # [color oscuro, color claro] de cada aplicación
+  app_colors:
+    excel: ["#1D6F42", "#33C481"]
+    word: ["#185ABD", "#41A5EE"]
+    powerpoint: ["#C43E1C", "#FF8F6B"]
+    outlook: ["#0F6CBD", "#28A8EA"]
+    teams: ["#4B53BC", "#7B83EB"]
+    onenote: ["#7719AA", "#CA64EA"]
+    sharepoint: ["#036C70", "#37C6D0"]
+    onedrive: ["#0364B8", "#28A8EA"]
+    powerbi: ["#9E7F00", "#F2C811"]
+    powerautomate: ["#0066FF", "#5C9DFF"]
+    chatgpt: ["#0E8C69", "#19C37D"]
+    gemini: ["#1A73E8", "#8AB4F8"]
+    github: ["#6E40C9", "#A371F7"]
+  # Palabras que delatan cada aplicación en el tema de una pieza
+  app_keywords:
+    excel: ["excel"]
+    word: ["word"]
+    powerpoint: ["powerpoint"]
+    outlook: ["outlook"]
+    teams: ["teams"]
+    onenote: ["onenote"]
+    sharepoint: ["sharepoint"]
+    onedrive: ["onedrive"]
+    powerbi: ["power bi", "powerbi"]
+    powerautomate: ["power automate"]
+    chatgpt: ["chatgpt", "openai"]
+    gemini: ["gemini"]
+    github: ["github"]
+
+# Referencias de estilo (vídeos en video/example). Se usan como INSPIRACIÓN para estructurar guiones y escenas:
+# nunca se copian tal cual, y todo va con la paleta de la marca.
+references: |
+  - preview.mp4 (estilo actual de historias): insignia del formato, objeto 3D del producto, titular grande y
+    puntos numerados en tarjetas.
+  - v1_reel (prompting): cabecera fija "The TechBridge Solution | tema", titular centrado con la palabra clave en
+    color, un prompt que se escribe en una ventana resaltando sus partes clave, y una explicación en "piezas"
+    (Rol, Tarea, Formato) con un objeto 3D por pieza. Cierre: "Guárdalo para…" y dónde funciona.
+  - v2_reel (noticia): fondo claro, etiqueta NOTICIA + medio y fecha, objetos que se ordenan (de caos a cuadrícula)
+    como metáfora de lo que hace la novedad, capítulos "QUÉ HACE · 1/3", un dato de DISPONIBILIDAD con fuente y un
+    cierre que conecta con el día a día.
+  - v3_reel (errores frecuentes): numeración grande "ERROR 01/02/03", cada error con un objeto 3D sobre pedestal
+    que lo simboliza (maletín, pila de documentos, lupa) y una tarjeta "MEJOR ASÍ" con la alternativa correcta.
+  - v4_truco (truco en 20 s): "Truco en 20 segundos · App", teclas 3D que se pulsan, el resultado real (una tabla
+    que aparece fila a fila) con 2-3 ventajas numeradas, un "bonus" con otro atajo y cierre "Guárdalo y pruébalo hoy".
+  Ideas que se repiten y funcionan: una sola idea por escena, metáfora visual del problema → solución, numerar las
+  partes, enseñar el resultado concreto, y cerrar con una acción (guardar, probar, compartir).
 
 # Formatos que se van rotando para que haya variedad.
 #   needs_news: true  → se basa en una noticia real de las fuentes
@@ -85,15 +134,15 @@ formats:
 # hero: ia · excel · correo · reuniones · datos · documentos · presentaciones · automatizacion
 products:
   - {name: "Microsoft 365 Copilot", hero: ia, keywords: ["copilot", "microsoft 365", "m365", "office 365"]}
-  - {name: "ChatGPT", hero: ia, keywords: ["chatgpt", "gpt-", "openai"]}
-  - {name: "Excel", hero: excel, keywords: ["excel"]}
-  - {name: "Outlook", hero: correo, keywords: ["outlook"]}
-  - {name: "Teams", hero: reuniones, keywords: ["teams"]}
-  - {name: "Power BI", hero: datos, keywords: ["power bi", "powerbi", "fabric"]}
-  - {name: "Word", hero: documentos, keywords: ["microsoft word", "word document", "en word"]}
-  - {name: "PowerPoint", hero: presentaciones, keywords: ["powerpoint"]}
-  - {name: "SharePoint y OneDrive", hero: documentos, keywords: ["sharepoint", "onedrive", "microsoft loop"]}
-  - {name: "Power Automate, Power Apps y Copilot Studio", hero: automatizacion, keywords: ["power automate", "power apps", "power platform", "copilot studio"]}
+  - {name: "ChatGPT", hero: ia, app: chatgpt, keywords: ["chatgpt", "gpt-", "openai"]}
+  - {name: "Excel", app: excel, hero: excel, keywords: ["excel"]}
+  - {name: "Outlook", app: outlook, hero: correo, keywords: ["outlook"]}
+  - {name: "Teams", app: teams, hero: reuniones, keywords: ["teams"]}
+  - {name: "Power BI", app: powerbi, hero: datos, keywords: ["power bi", "powerbi", "fabric"]}
+  - {name: "Word", app: word, hero: documentos, keywords: ["microsoft word", "word document", "en word"]}
+  - {name: "PowerPoint", app: powerpoint, hero: presentaciones, keywords: ["powerpoint"]}
+  - {name: "SharePoint y OneDrive", app: sharepoint, hero: documentos, keywords: ["sharepoint", "onedrive", "microsoft loop"]}
+  - {name: "Power Automate, Power Apps y Copilot Studio", app: powerautomate, hero: automatizacion, keywords: ["power automate", "power apps", "power platform", "copilot studio"]}
 
 # Fuentes de noticias (RSS/Atom). Si alguna falla, se ignora y sigue.
 sources:

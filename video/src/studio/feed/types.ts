@@ -2,7 +2,7 @@ import type {FeedCoverProps} from './FeedCover';
 
 export type Slide = {kind: string} & Record<string, unknown>;
 
-export type SlideProps = {slide: Slide; index: number; total: number; family: string; extra?: Record<string, unknown>};
+export type SlideProps = {slide: Slide; index: number; total: number; family: string; extra?: Record<string, unknown>; app?: string | null};
 
 /** Carrusel completo: la diapositiva 0 siempre es la portada del sistema de portadas. */
 export type CarouselProps = {
@@ -14,4 +14,6 @@ export type CarouselProps = {
   index: number;
   /** Datos propios del modelo (p. ej. nombres de A y B en la comparativa). */
   extra?: Record<string, unknown>;
+  /** Aplicación de la que trata (color propio) o null para el azul de la marca. */
+  app?: string | null;
 };

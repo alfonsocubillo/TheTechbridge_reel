@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
-import {FEED, FeedBg, Grain, Hi, INTER, Lockup, OutlineGlyph, PageCount, Rail, Spaced, TIGHT, family, fit} from '../kit';
+import {BRAND, FEED, FeedBg, theme, Grain, Hi, INTER, Lockup, OutlineGlyph, PageCount, Rail, Spaced, TIGHT, family, fit} from '../kit';
 
 /**
  * Sistema de portadas del feed. Una sola gramática para Reels y carruseles:
@@ -25,10 +25,12 @@ export type FeedCoverProps = {
   cta?: string;
   /** Solo carrusel: número de diapositivas para "01 / 07". */
   total?: number;
+  /** Aplicación de la que trata (excel, teams…): usa su color. Sin app, el azul de la marca. */
+  app?: string | null;
 };
 
 export const FeedCover: React.FC<FeedCoverProps & {format: 'reel' | 'carousel'}> = (p) => {
-  const fam = family(p.family);
+  const fam = family(p.family, p.app);
   const reel = p.format === 'reel';
   const H = reel ? 1920 : 1350;
   const top = reel ? 300 : 70; // dentro del recorte 3:4
@@ -49,7 +51,7 @@ export const FeedCover: React.FC<FeedCoverProps & {format: 'reel' | 'carousel'}>
 
   return (
     <AbsoluteFill style={{background: FEED.bg, overflow: 'hidden'}}>
-      <FeedBg glow={layout === 'b' ? '#16306A' : '#123A7A'} flip={layout === 'b'} />
+      <FeedBg glow={p.app ? theme(p.app).deep : layout === 'b' ? BRAND.blue : BRAND.deep} flip={layout === 'b'} />
       <OutlineGlyph text={glyph} x={glyphBox.x} y={glyphBox.y} size={glyphBox.size} anchor={glyphBox.anchor} opacity={layout === 'c' ? 0.3 : 1} />
       <Lockup y={top} />
       {p.total ? <PageCount i={1} n={p.total} y={top} /> : <Spaced color={fam.accent} size={26} spacing={6} style={{position: 'absolute', right: 90, top: top + 4}}>{fam.label}</Spaced>}

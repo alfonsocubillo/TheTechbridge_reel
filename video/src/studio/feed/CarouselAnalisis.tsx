@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
-import {Grain, INTER, POP, SERIF, SERIF_I, fit} from '../kit';
+import {Grain, INTER, POP, SERIF, SERIF_I, fit, theme} from '../kit';
 import type {SlideProps} from './types';
 
 /**
@@ -14,15 +14,12 @@ import type {SlideProps} from './types';
  *   accion  → {title, steps: []}
  *   closing → {title, text}
  */
-const PAPER = '#F2EEE6';
-const INK = '#16120F';
-const SOFT = '#6B6258';
-const DEEP: Record<string, string> = {
-  tutorial: '#1D5FC4', noticia: '#C8381F', comparativa: '#A26E00', analisis: '#5B3CC4', prompting: '#0B7F5F', curiosidad: '#B4306F',
-};
+const PAPER = '#F4F7FB';
+const INK = '#1B2027';
+const SOFT = '#5F6B7A';
 
-export const CarouselAnalisis: React.FC<SlideProps> = ({slide, index, total, family: famKey}) => {
-  const accent = DEEP[famKey] ?? DEEP.analisis;
+export const CarouselAnalisis: React.FC<SlideProps> = ({slide, index, total, app}) => {
+  const accent = theme(app).deep;
   const s = slide as Record<string, any>;
   const Body = {lead: Lead, cifras: Cifras, cita: Cita, claves: Claves, accion: Accion, closing: Closing}[s.kind as string] ?? Claves;
   return (
@@ -58,7 +55,7 @@ const Lead: B = ({s, accent}) => {
     <div style={{display: 'flex', flexDirection: 'column', gap: 34}}>
       <Kick text={s.kicker ?? 'QUÉ HA PASADO'} accent={accent} />
       <div style={{fontFamily: SERIF, fontWeight: 800, fontSize: fit(String(s.title), 900, 84, 58, 3, 0.5), lineHeight: 1.06, letterSpacing: -1.5, color: INK}}>{s.title}</div>
-      <div style={{fontFamily: INTER, fontWeight: 500, fontSize: fit(text, 900, 40, 31, 10, 0.52), lineHeight: 1.5, color: '#2A241F'}}>
+      <div style={{fontFamily: INTER, fontWeight: 500, fontSize: fit(text, 900, 40, 31, 10, 0.52), lineHeight: 1.5, color: '#2A3038'}}>
         <span style={{float: 'left', fontFamily: SERIF, fontWeight: 900, fontSize: 150, lineHeight: 0.8, marginRight: 18, marginTop: 10, color: accent}}>{text.charAt(0)}</span>
         {text.slice(1)}
       </div>
@@ -75,7 +72,7 @@ const Cifras: B = ({s, accent}) => {
       {stats.map((st, i) => (
         <div key={i} style={{display: 'flex', alignItems: 'baseline', gap: 34, paddingTop: 26, borderTop: `2px solid ${INK}25`}}>
           <div style={{fontFamily: SERIF, fontWeight: 900, fontSize: fit(st.value, 420, 130, 60, 1, 0.78), color: accent, letterSpacing: -3, lineHeight: 1, width: 460, flexShrink: 0, whiteSpace: 'nowrap'}}>{st.value}</div>
-          <div style={{fontFamily: INTER, fontWeight: 500, fontSize: 34, color: '#2A241F', lineHeight: 1.35}}>{st.label}</div>
+          <div style={{fontFamily: INTER, fontWeight: 500, fontSize: 34, color: '#2A3038', lineHeight: 1.35}}>{st.label}</div>
         </div>
       ))}
     </div>
@@ -97,7 +94,7 @@ const Claves: B = ({s, accent}) => (
     {(s.points ?? []).slice(0, 4).map((pt: string, i: number) => (
       <div key={i} style={{display: 'flex', gap: 28}}>
         <div style={{fontFamily: SERIF, fontWeight: 900, fontSize: 56, color: accent, lineHeight: 1, minWidth: 54}}>{i + 1}</div>
-        <div style={{fontFamily: INTER, fontWeight: 500, fontSize: fit(pt, 800, 38, 30, 3, 0.52), color: '#2A241F', lineHeight: 1.4, paddingTop: 6}}>{pt}</div>
+        <div style={{fontFamily: INTER, fontWeight: 500, fontSize: fit(pt, 800, 38, 30, 3, 0.52), color: '#2A3038', lineHeight: 1.4, paddingTop: 6}}>{pt}</div>
       </div>
     ))}
   </div>
@@ -110,7 +107,7 @@ const Accion: B = ({s, accent}) => (
     <div style={{padding: '36px 40px', background: INK, borderRadius: 6, display: 'flex', flexDirection: 'column', gap: 26}}>
       {(s.steps ?? []).slice(0, 4).map((st: string, i: number) => (
         <div key={i} style={{display: 'flex', gap: 22, fontFamily: INTER, fontWeight: 500, fontSize: fit(st, 760, 36, 28, 3, 0.52), color: PAPER, lineHeight: 1.38}}>
-          <span style={{color: accent === '#5B3CC4' ? '#C4B5FD' : '#FFD1A6', fontWeight: 800}}>→</span>
+          <span style={{color: '#A9D4F7', fontWeight: 800}}>→</span>
           <span>{st}</span>
         </div>
       ))}

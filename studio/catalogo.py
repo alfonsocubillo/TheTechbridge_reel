@@ -20,6 +20,7 @@ from agent.common import load_config
 
 from . import library, render, sound
 from .catalog import FAMILIES, MODELS
+from .variantes import color_jobs
 
 FAM_TEXT = {
     "noticia": ("NOTICIA · OPENAI", "ChatGPT ya trabaja con tus archivos", "tus archivos", "Qué cambia y qué no deberías compartir.", None),
@@ -79,15 +80,12 @@ def _variant_jobs(dest: Path) -> list[tuple[str, dict]]:
     for fam in FAMILIES:
         kicker, title, hl, sub, glyph = FAM_TEXT[fam]
         for layout in "abc":
-            cover = {"family": fam, "kicker": kicker, "title": title, "highlight": hl, "subtitle": sub, "glyph": glyph, "layout": layout, "cta": None, "total": None}
+            cover = {"family": fam, "kicker": kicker, "title": title, "highlight": hl, "subtitle": sub, "glyph": glyph, "layout": layout, "cta": None, "total": None, "app": None}
             still("Portadas_Reel", "StudioCoverReel", cover, f"portada-reel_{fam}_{layout}.jpg")
-            still("Portadas_Carrusel", "StudioCarousel", {"model": "CR01", "family": fam, "cover": cover, "slides": [{"kind": "closing", "title": "x"}], "index": 0, "extra": {}},
+            still("Portadas_Carrusel", "StudioCarousel", {"model": "CR01", "family": fam, "cover": cover, "slides": [{"kind": "closing", "title": "x"}], "index": 0, "extra": {}, "app": None},
                   f"portada-carrusel_{fam}_{layout}.jpg")
-    # Carruseles: cada modelo en los 6 colores + tipos de diapositiva que aún no han salido
-    for model, (slide, extra) in CAROUSEL_SAMPLE.items():
-        for fam in FAMILIES:
-            still("Carruseles_Colores", "StudioCarousel", {"model": model, "family": fam, "cover": {"family": fam, "kicker": "x", "title": "x"}, "slides": [slide, slide],
-                                                           "index": 1, "extra": extra}, f"{model}_{MODELS[model]['name'].replace(' ', '-')}_{fam}.jpg")
+    # Colores: paleta de la marca y versión de cada aplicación (portadas, carruseles, fotos, Pulso, Terminal, Quiz, Reels)
+    color_jobs(still, video, CAROUSEL_SAMPLE, PULSO_VISUALS, MODELS)
     for model, slide in EXTRA_SLIDES:
         still("Carruseles_Colores", "StudioCarousel", {"model": model, "family": "prompting", "cover": {"family": "prompting", "kicker": "x", "title": "x"},
                                                        "slides": [slide], "index": 1, "extra": {}}, f"{model}_diapositiva-texto.jpg")
@@ -95,9 +93,9 @@ def _variant_jobs(dest: Path) -> list[tuple[str, dict]]:
     tracks = ["tb-synthwave-drive.mp3", "tb-tech-pulse.mp3", "holizna-make-funk.mp3", "tb-uplift-corporate.mp3"]
     for pal in range(4):
         for name, visual in PULSO_VISUALS:
-            data = {"hook": "Esto te va a ahorrar tiempo", "visual": visual, "payoff": "Una frase que remata la idea y se lee de un vistazo.", "cta": "Pruébalo"}
+            data = {"hook": "Esto te va a ahorrar tiempo", "visual": visual, "payoff": "Una frase que remata la idea y se lee de un vistazo.", "cta": "Pruébalo", "app": None}
             video("Historias_Pulso", "StudioStoryVideo", {"model": "HVPULSO", "data": data, "music": f"lib/music/{tracks[pal]}", "musicStart": 10, "bpm": 116, "palette": pal},
-                  f"pulso_paleta{pal + 1}_{name}.mp4")
+                  f"pulso_marca{pal + 1}_{name}.mp4")
     # Modelo actual: tipos que aún no han salido (vídeo) y los 8 objetos 3D (imagen)
     cfg = load_config()
     music = {"file": "tb-news-ticker.mp3", "start": 5, "style": ""}
@@ -112,15 +110,6 @@ def _variant_jobs(dest: Path) -> list[tuple[str, dict]]:
     for model, scenes in (("RL01", [s for s in RL_SHOWCASE if s["type"] != "date"]), ("RL02", RL_SHOWCASE)):
         video("Reels_Escenas", "StudioReel", {"model": model, "family": "tutorial", "hero": "datos", "scenes": scenes, "extra": {},
                                               "music": "lib/music/tb-cinematic-rise.mp3", "musicStart": 0, "musicVolume": 0.45}, f"{model}_{MODELS[model]['name'].replace(' ', '-')}_muestrario.mp4")
-    heroes = list(HERO_PRODUCTS)
-    for i, fam in enumerate(FAMILIES):
-        scenes = [{"type": "chapter", "label": fam.upper(), "title": f"Color de la familia {fam}", "body": "Mismo modelo, otro color y otro objeto 3D."}]
-        still("Reels_Colores", "StudioReel", {"model": "RL01", "family": fam, "hero": heroes[i], "scenes": scenes, "extra": {}, "music": None},
-              f"RL01_{fam}_{heroes[i]}.jpg", frame=60)
-    for hero in heroes[6:]:
-        scenes = [{"type": "chapter", "label": "OBJETO 3D", "title": f"Objeto {hero}", "body": "Objeto 3D disponible para los Reels."}]
-        still("Reels_Colores", "StudioReel", {"model": "RL01", "family": "tutorial", "hero": hero, "scenes": scenes, "extra": {}, "music": None},
-              f"RL01_tutorial_{hero}.jpg", frame=60)
     return out
 
 
@@ -128,8 +117,11 @@ SECTIONS = {
     "Actual": "Lo ya generado (todos los ejemplos)",
     "Portadas_Reel": "Portadas de Reel · 6 familias × 3 composiciones",
     "Portadas_Carrusel": "Portadas de carrusel · 6 familias × 3 composiciones",
-    "Carruseles_Colores": "Cada modelo de carrusel en los 6 colores de familia",
-    "Historias_Pulso": "Historia Pulso · 4 paletas × 3 elementos (teclas, cifra, palabra)",
+    "Portadas_Apps": "Portadas con el color de cada aplicación (cuando el tema va de una)",
+    "Carruseles_Colores": "Cada modelo de carrusel en la paleta de la marca y en colores de app",
+    "Historias_Fotos": "Fotos de historias · paleta de la marca y color de app",
+    "Historias_Otros_Videos": "Terminal y Quiz en la paleta de la marca",
+    "Historias_Pulso": "Historia Pulso · 4 variaciones de la marca × 3 elementos y versiones de app",
     "Historias_Actual": "Historia Actual 3D · tipos que faltaban y los 8 objetos 3D",
     "Reels_Escenas": "Reels · muestrario con todos los tipos de escena",
     "Reels_Colores": "Reel Cinemático · colores de familia y objetos 3D",

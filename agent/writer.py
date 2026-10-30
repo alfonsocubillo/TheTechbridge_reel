@@ -111,7 +111,13 @@ def products_text(cfg: dict) -> str:
 def positioning(cfg: dict) -> str:
     return f"""Productos con los que trabaja la marca (y sobre los que forma a equipos): {products_text(cfg)}.
 Todo el contenido gira alrededor de estos productos. El objetivo NO es vender, pero quien lo vea tiene que
-pensar "esto mi equipo debería saber usarlo" y quedarse con que esta cuenta sabe de verdad de esto."""
+pensar "esto mi equipo debería saber usarlo" y quedarse con que esta cuenta sabe de verdad de esto.""" + references(cfg)
+
+
+def references(cfg: dict) -> str:
+    """Guía de estilo sacada de los vídeos de referencia (config → references): inspiración, nunca copia."""
+    ref = (cfg.get("references") or "").strip()
+    return f"\n\nReferencias de estilo de la marca (inspírate en sus recursos, no las copies):\n{ref}" if ref else ""
 
 
 def pick_story(cfg: dict, fmt_key: str, news: list[dict], recent_titles: list[str]) -> dict | None:

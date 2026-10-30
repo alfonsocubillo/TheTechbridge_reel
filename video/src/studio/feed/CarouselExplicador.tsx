@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
-import {Grain, Hi, INTER, POP, Spaced, TIGHT, fit} from '../kit';
+import {Grain, Hi, INTER, POP, Spaced, TIGHT, fit, theme} from '../kit';
 import type {SlideProps} from './types';
 
 /**
@@ -15,14 +15,11 @@ import type {SlideProps} from './types';
  *   closing    → {title, highlight?, text}
  */
 const PAPER = '#F3F6FB';
-const INK = '#0B1530';
+const INK = '#0A1F3D';
 const SOFT = '#55617A';
-const DEEP: Record<string, string> = {
-  tutorial: '#1D6FD8', noticia: '#D9452E', comparativa: '#B07800', analisis: '#6545D8', prompting: '#0E8F6C', curiosidad: '#C93C84',
-};
 
-export const CarouselExplicador: React.FC<SlideProps> = ({slide, index, total, family: famKey}) => {
-  const accent = DEEP[famKey] ?? DEEP.tutorial;
+export const CarouselExplicador: React.FC<SlideProps> = ({slide, index, total, app}) => {
+  const accent = theme(app).deep;
   const s = slide as Record<string, any>;
   const Body = {definicion: Definicion, flujo: Flujo, pasos: Pasos, ejemplo: Ejemplo, resumen: Resumen, closing: Closing}[s.kind as string] ?? Resumen;
   return (

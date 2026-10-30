@@ -24,22 +24,44 @@ from .catalog import MODELS, PUBLICACION
 COVER_KEYS = ("kicker", "title", "highlight", "subtitle", "glyph", "layout", "cta", "total")
 
 
+def app_for(piece: dict) -> str | None:
+    """Aplicación con color propio de la pieza (la indica Claude o se deduce del tema). Las comparativas no tienen
+    un color único: cada lado lleva el suyo."""
+    from agent.main import detect_app
+    if piece["modelo"] in {"RL03", "CR03"}:
+        return None
+    cfg = load_config()
+    app = piece.get("app")
+    if app in (cfg["visual"].get("app_colors") or {}):
+        return app
+    return detect_app(cfg, f"{piece['tema']} {(piece.get('portada') or {}).get('title', '')}")
+
+
+def _sides(d: dict) -> dict:
+    """Lados A/B de una comparativa, con la app de cada uno si tiene color propio."""
+    from agent.main import detect_app
+    cfg = load_config()
+    return {k: {**d[k], "app": d[k].get("app") or detect_app(cfg, d[k].get("name", ""))} for k in ("a", "b") if k in d}
+
+
 def cover_props(piece: dict) -> dict:
     """Todas las claves explícitas: Remotion rellena las que faltan con las de la muestra de la composición."""
     c = piece["portada"]
-    return {k: c.get(k) for k in COVER_KEYS} | {"family": piece["familia"], "layout": c.get("layout") or "a"}
+    return {k: c.get(k) for k in COVER_KEYS} | {"family": piece["familia"], "layout": c.get("layout") or "a", "app": app_for(piece)}
 
 
 SFX_OLD = ("whoosh1", "whoosh2", "whoosh3", "impact", "riser", "shimmer", "pop", "tick", "ding", "type", "swipe")
 
 
 def _story_actual_props(cfg: dict, d: dict, music: dict) -> tuple[dict, int, int]:
-    from agent.main import hero_for
+    from agent.main import accent_for, hero_for
     from agent.stories import KINDS, timing
     vis = cfg["visual"]
     kind = KINDS.get(d.get("kind"), KINDS["truco"])
     fmt = kind["format"] or "noticia"
-    accent = vis["accents"][int(cfg["formats"].get(fmt, {}).get("accent", 0)) % len(vis["accents"])]
+    accent = accent_for(cfg, fmt, d.get("product"))
+    if d.get("app") in (vis.get("app_colors") or {}):
+        accent = vis["app_colors"][d["app"]]
     dur, split = timing(d)
     props = {
         "brand": {"name": cfg["brand"]["name"], "handle": cfg["brand"]["handle"], "bg": vis["background"], "text": vis["text"],
@@ -69,7 +91,8 @@ def jobs_for(piece: dict, out: Path, music: dict | None) -> tuple[list[dict], li
     """Trabajos de render de una pieza y la lista de archivos que generará (el primero es el principal)."""
     cfg = load_config()
     m = MODELS[piece["modelo"]]
-    d = piece["data"]
+    app = app_for(piece)
+    d = {**piece["data"], "app": app}
     jobs, files = [], []
 
     def job(comp: str, props: dict, name: str, kind: str = "still", **kw) -> None:
@@ -89,14 +112,14 @@ def jobs_for(piece: dict, out: Path, music: dict | None) -> tuple[list[dict], li
         job("StudioStoryVideo", props, "miniatura.jpg", frame={"HVPULSO": 300, "HVQUIZ": 330}.get(piece["modelo"]) or _terminal_frames(d) - 40, scale=0.5)
     elif m["kind"] == "reel":
         props = {"model": piece["modelo"], "family": piece["familia"], "hero": d.get("hero"), "scenes": d["scenes"],
-                 "extra": {k: d[k] for k in ("a", "b") if k in d}, "music": f"lib/music/{music['file']}",
-                 "musicStart": music["start"], "musicVolume": 0.45}
+                 "extra": _sides(d), "music": f"lib/music/{music['file']}",
+                 "musicStart": music["start"], "musicVolume": 0.45, "app": app}
         job("StudioReel", props, "reel.mp4", "video")
         job("StudioCoverReel", cover_props(piece), "portada.jpg")
     elif m["kind"] == "carrusel":
         slides = d["slides"]
         base = {"model": piece["modelo"], "family": piece["familia"], "cover": cover_props(piece),
-                "slides": slides, "extra": {k: d[k] for k in ("a", "b") if k in d}}
+                "slides": slides, "extra": _sides(d), "app": app}
         for i in range(len(slides) + 1):
             job("StudioCarousel", {**base, "index": i}, f"{i + 1:02d}.jpg")
     return jobs, files
@@ -151,7 +174,7 @@ def produce(pieces: list[dict], origin: str = "ejemplo") -> list[dict]:
             "id": f"{now:%m%d}-{piece['modelo']}-{library.slug(piece['tema'], 18)}",
             "fecha": now.isoformat(timespec="minutes"),
             "canal": piece["canal"], "tipo": m["kind"], "modelo": piece["modelo"], "modelo_nombre": m["name"],
-            "familia": piece.get("familia"), "categoria": piece.get("categoria"), "contenido": piece.get("contenido"),
+            "familia": piece.get("familia"), "app": app_for(piece), "categoria": piece.get("categoria"), "contenido": piece.get("contenido"),
             "tema": piece["tema"], "enfoque": piece.get("enfoque", ""), "fuente": piece.get("fuente"),
             "musica": music["file"] if music else None, "musica_estilo": music["style"] if music else None,
             "musica_inicio_s": music["start"] if music else None,

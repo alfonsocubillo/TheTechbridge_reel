@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
-import {FEED, FeedBg, Grain, Hi, INTER, Lockup, PageCount, POP, Spaced, TIGHT, fit} from '../kit';
+import {BRAND, FEED, FeedBg, theme, Grain, Hi, INTER, Lockup, PageCount, POP, Spaced, TIGHT, fit} from '../kit';
 import type {SlideProps} from './types';
 
 /**
@@ -13,19 +13,22 @@ import type {SlideProps} from './types';
  *   eleccion → {title, a_if: [], b_if: []}
  *   closing  → {title, highlight?, text}
  */
-const A = '#7DD3FC';
-const B = '#FCD34D';
+// A = azul de la marca, B = violeta secundario de la marca. Si un lado es una app con color propio (extra.a.app), se usa el suyo.
+let A = BRAND.light;
+let B = BRAND.violetLight;
 
-type Side = {name: string; tagline?: string};
+type Side = {name: string; tagline?: string; app?: string};
 
 export const CarouselComparativa: React.FC<SlideProps> = ({slide, index, total, extra}) => {
   const s = slide as Record<string, any>;
   const a = (extra?.a ?? {name: 'A'}) as Side;
   const b = (extra?.b ?? {name: 'B'}) as Side;
+  A = a.app ? theme(a.app).accent : BRAND.light;
+  B = b.app ? theme(b.app).accent : BRAND.violetLight;
   const Body = {duelo: Duelo, criterio: Criterio, tabla: Tabla, eleccion: Eleccion, closing: Closing}[s.kind as string] ?? Tabla;
   return (
     <AbsoluteFill style={{background: FEED.bg, overflow: 'hidden'}}>
-      <FeedBg glow="#1A2C5A" flip={index % 2 === 0} />
+      <FeedBg glow={BRAND.deep} flip={index % 2 === 0} />
       {/* Halo de cada lado */}
       <AbsoluteFill style={{background: `radial-gradient(ellipse 40% 60% at 0% 55%, ${A}1c, transparent 70%), radial-gradient(ellipse 40% 60% at 100% 55%, ${B}1c, transparent 70%)`}} />
       <Lockup />

@@ -15,7 +15,7 @@ from datetime import datetime
 
 from agent import news
 from agent.common import load_config, log
-from agent.writer import _json, claude
+from agent.writer import _json, claude, references
 
 from . import library
 from .catalog import CATEGORIES, FAMILIES, HISTORIA, MODELS, PUBLICACION, models_for
@@ -34,7 +34,8 @@ def _brief(cfg: dict) -> str:
     b = cfg["brand"]
     return (f"Marca: {b['name']} ({b['handle']}). {b['about'].strip()}\nAudiencia: {cfg['audience'].strip()}\n"
             f"Tono: {cfg['tone'].strip()}\nObjetivo: ser una cuenta de referencia en tecnología e innovación, no vender. "
-            "Solo de vez en cuando, y si encaja con naturalidad, una mención a la formación de la empresa.")
+            "Solo de vez en cuando, y si encaja con naturalidad, una mención a la formación de la empresa."
+            + references(cfg))
 
 
 def _memory_summary(mem: list[dict]) -> str:
@@ -125,13 +126,15 @@ Reglas:
 - "glyph" de portada: 1-3 caracteres (un número o un símbolo), o nada.
 - En "highlight" pon palabras literales del título.
 
-Devuelve solo JSON:
-{{"data": {m['schema']},
+Devuelve solo JSON ("app": la aplicación de la que trata si es UNA de estas: excel, word, powerpoint, outlook, teams,
+onenote, sharepoint, onedrive, powerbi, powerautomate, chatgpt, gemini, github; si no, null. Se usa su color; si no, el de la marca):
+{{"app": null,
+ "data": {m['schema']},
  {extra}
  "fuente": "URL o null"}}"""
     r = _json(claude("Eres guionista y diseñador de contenido de una cuenta de tecnología. Respondes solo JSON válido.", prompt))
     piece = {"canal": channel, "modelo": pick["modelo"], "categoria": pick.get("categoria"), "contenido": pick.get("contenido"),
-             "tema": pick["tema"], "enfoque": pick.get("enfoque", ""), "data": r["data"], "fuente": r.get("fuente") or (item or {}).get("url")}
+             "tema": pick["tema"], "enfoque": pick.get("enfoque", ""), "data": r["data"], "app": r.get("app"), "fuente": r.get("fuente") or (item or {}).get("url")}
     if feed:
         piece.update(familia=pick.get("familia") if pick.get("familia") in FAMILIES else "tutorial",
                      portada=_clean_cover(r.get("portada") or {"kicker": pick.get("categoria", "").upper(), "title": pick["tema"]}),

@@ -29,33 +29,71 @@ export const ARCH = loadArchivo('normal', {weights: ['700', '800', '900'], ...la
 
 export const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
+// ───────────────────────── Colores de marca y de cada aplicación ─────────────────────────
+
+/** Paleta de thetechbridgesolution.com: degradado #015DAC → #267FCB, carbón del logo y violeta secundario. */
+export const BRAND = {
+  blue: '#267FCB',
+  deep: '#015DAC',
+  light: '#5AAEEE', // el azul de marca aclarado para leerse bien sobre fondo oscuro
+  sky: '#A9D4F7',
+  navy: '#03132A',
+  charcoal: '#282828',
+  violet: '#5F2DDE',
+  violetLight: '#9D86F5',
+};
+
+/** Cuando el contenido va de una aplicación con color propio, se usa el suyo (accent = sobre oscuro, deep = sobre claro). */
+export const APPS: Record<string, {accent: string; deep: string}> = {
+  excel: {accent: '#33C481', deep: '#1D6F42'},
+  word: {accent: '#41A5EE', deep: '#185ABD'},
+  powerpoint: {accent: '#FF8F6B', deep: '#C43E1C'},
+  outlook: {accent: '#28A8EA', deep: '#0F6CBD'},
+  teams: {accent: '#7B83EB', deep: '#4B53BC'},
+  onenote: {accent: '#CA64EA', deep: '#7719AA'},
+  sharepoint: {accent: '#37C6D0', deep: '#036C70'},
+  onedrive: {accent: '#28A8EA', deep: '#0364B8'},
+  powerbi: {accent: '#F2C811', deep: '#9E7F00'},
+  powerautomate: {accent: '#5C9DFF', deep: '#0066FF'},
+  chatgpt: {accent: '#19C37D', deep: '#0E8C69'},
+  gemini: {accent: '#8AB4F8', deep: '#1A73E8'},
+  github: {accent: '#A371F7', deep: '#6E40C9'},
+};
+
+export type Theme = {accent: string; deep: string; grad: [string, string]; app: string | null};
+
+export const theme = (app?: string | null): Theme => {
+  const a = app ? APPS[app] : undefined;
+  return a ? {accent: a.accent, deep: a.deep, grad: [a.deep, a.accent], app: app ?? null} : {accent: BRAND.light, deep: BRAND.blue, grad: [BRAND.deep, BRAND.blue], app: null};
+};
+
 // ───────────────────────── Feed ─────────────────────────
 
 export const FEED = {
-  bg: '#050A1A',
-  bg2: '#0B1A3A',
+  bg: BRAND.navy,
+  bg2: '#0A2448',
   text: '#FFFFFF',
-  muted: '#8E9BB5',
-  line: '#2A4A6A',
-  outline: '#35597C',
+  muted: '#93A6C2',
+  line: '#24476E',
+  outline: '#2F5F8E',
   card: '#FFFFFF',
-  ink: '#0B1530',
-  cobalt: '#2350D8',
+  ink: '#0A1F3D',
+  cobalt: BRAND.deep,
 };
 
-/** Familias del feed: cada una con su color (todos pasteles sobre azul noche) y su glifo de fondo. */
-export const FAMILIES: Record<string, {label: string; accent: string; glyph: string}> = {
-  tutorial: {label: 'TUTORIAL', accent: '#7DD3FC', glyph: '→'},
-  noticia: {label: 'NOTICIA', accent: '#FF8A75', glyph: '!'},
-  comparativa: {label: 'COMPARATIVA', accent: '#FCD34D', glyph: 'VS'},
-  analisis: {label: 'ANÁLISIS', accent: '#C4B5FD', glyph: '%'},
-  prompting: {label: 'PROMPTING', accent: '#6EE7B7', glyph: '/'},
-  curiosidad: {label: 'CURIOSIDAD', accent: '#F9A8D4', glyph: '?'},
+/** Familias del feed: mismo color (el de la marca o el de la app), cambian el rótulo y el glifo de fondo. */
+export const FAMILIES: Record<string, {label: string; glyph: string}> = {
+  tutorial: {label: 'TUTORIAL', glyph: '→'},
+  noticia: {label: 'NOTICIA', glyph: '!'},
+  comparativa: {label: 'COMPARATIVA', glyph: 'VS'},
+  analisis: {label: 'ANÁLISIS', glyph: '%'},
+  prompting: {label: 'PROMPTING', glyph: '/'},
+  curiosidad: {label: 'CURIOSIDAD', glyph: '?'},
 };
-export const family = (key?: string) => FAMILIES[key ?? ''] ?? FAMILIES.tutorial;
+export const family = (key?: string, app?: string | null) => ({...(FAMILIES[key ?? ''] ?? FAMILIES.tutorial), accent: theme(app).accent});
 
 /** Fondo del feed: azul noche con dos halos suaves (como la referencia). */
-export const FeedBg: React.FC<{glow?: string; flip?: boolean}> = ({glow = '#123A7A', flip}) => (
+export const FeedBg: React.FC<{glow?: string; flip?: boolean}> = ({glow = BRAND.deep, flip}) => (
   <AbsoluteFill
     style={{
       background: [

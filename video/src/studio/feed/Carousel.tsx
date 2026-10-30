@@ -14,11 +14,11 @@ export const CAROUSELS: Record<string, React.FC<SlideProps>> = {
 };
 
 /** Una diapositiva de un carrusel (1080x1350). La 0 es siempre la portada del sistema de portadas. */
-export const Carousel: React.FC<CarouselProps> = ({model, family, cover, slides, index, extra}) => {
+export const Carousel: React.FC<CarouselProps> = ({model, family, cover, slides, index, extra, app}) => {
   const total = slides.length + 1;
-  if (index === 0) return <FeedCover {...cover} family={family} total={total} format="carousel" />;
+  if (index === 0) return <FeedCover {...cover} family={family} total={total} app={app ?? cover.app} format="carousel" />;
   const Comp = CAROUSELS[model] ?? CarouselGuia;
-  return <Comp slide={slides[index - 1]} index={index} total={total} family={family} extra={extra} />;
+  return <Comp slide={slides[index - 1]} index={index} total={total} family={family} extra={extra} app={app ?? cover.app} />;
 };
 
 export const carouselSample: CarouselProps = {

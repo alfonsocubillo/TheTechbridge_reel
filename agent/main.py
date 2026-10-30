@@ -45,11 +45,38 @@ def hero_for(cfg: dict, product: str | None) -> str:
     return "ia"
 
 
+def app_of(cfg: dict, product: str | None) -> str | None:
+    """Aplicación con color propio del producto del guion (config → products → app), si la tiene."""
+    want = (product or "").strip().lower()
+    for p in cfg.get("products", []):
+        name = p["name"].lower()
+        if want and (want == name or want in name or name in want):
+            return p.get("app")
+    return None
+
+
+def detect_app(cfg: dict, text: str) -> str | None:
+    """Aplicación de la que trata un texto (solo si se menciona una; con varias, la paleta de la marca)."""
+    t = f" {text.lower()} "
+    found = {app for app, kws in (cfg["visual"].get("app_keywords") or {}).items()
+             if any(re.search(r"(?<![\w])" + re.escape(k) + r"(?![\w])", t) for k in kws)}
+    return found.pop() if len(found) == 1 else None
+
+
+def accent_for(cfg: dict, fmt_key: str | None, product: str | None = None, fallback: int = 0) -> list[str]:
+    """Color del vídeo: el de la app si el contenido va de una con color propio; si no, la paleta de la marca."""
+    vis = cfg["visual"]
+    app = app_of(cfg, product)
+    if app and app in (vis.get("app_colors") or {}):
+        return vis["app_colors"][app]
+    return vis["accents"][int(cfg["formats"].get(fmt_key or "", {}).get("accent", fallback)) % len(vis["accents"])]
+
+
 def build_props(cfg: dict, sb: dict, fmt_key: str, history: list[dict]) -> dict:
     run = assets.prepare_run()
     vis = cfg["visual"]
     # Cada formato tiene su color fijo: vídeo y portada coinciden y el perfil queda ordenado
-    accent = vis["accents"][int(cfg["formats"][fmt_key].get("accent", len(history))) % len(vis["accents"])]
+    accent = accent_for(cfg, fmt_key, sb.get("product"), len(history))
 
     use_voice = bool(env("ELEVENLABS_API_KEY") and env("ELEVENLABS_VOICE_ID")) and \
         random.random() < float(cfg["audio"]["voice_ratio"])

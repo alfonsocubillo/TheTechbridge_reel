@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta
 
 from . import assets, news, writer
 from .common import FPS, OUT_DIR, env, load_history, log, minutes
-from .main import hero_for, remotion
+from .main import accent_for, hero_for, remotion
 
 # tipo de historia → rótulo, icono de la insignia y formato del que toma el color
 KINDS = {
@@ -52,7 +52,7 @@ def render_stories(cfg: dict, stories: list[dict], reel_format: str | None = Non
     for i, s in enumerate(stories):
         kind = KINDS.get(s.get("kind"), KINDS["truco"])
         fmt = kind["format"] or reel_format or "noticia"
-        accent = vis["accents"][int(cfg["formats"].get(fmt, {}).get("accent", 0)) % len(vis["accents"])]
+        accent = accent_for(cfg, fmt, s.get("product"))
         dur, split = timing(s)
         music = assets.pick_music(run / f"story_music{i}.m4a", dur / FPS)
         props = {

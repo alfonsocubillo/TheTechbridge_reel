@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, Sequence, interpolate, spring, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Cue, FEED, Grain, Hi, INTER, Music, POP, SfxTrack, Spaced, TIGHT, clamp, family, fit} from '../kit';
+import {BRAND, Cue, FEED, Grain, Hi, INTER, Music, POP, SfxTrack, Spaced, TIGHT, clamp, family, fit, theme} from '../kit';
 import {Stage} from '../../three/Stage';
 import {Floaters, HEROES, type HeroKey} from '../../three/heroes';
 
@@ -27,6 +27,8 @@ export type StudioReelProps = {
   music?: string;
   musicStart?: number;
   musicVolume?: number;
+  /** Aplicación de la que trata (color propio) o null para la paleta de la marca. */
+  app?: string | null;
 };
 
 const words = (s: ReelScene) => Object.values(s).filter((v) => typeof v === 'string').join(' ').split(/\s+/).length
@@ -97,10 +99,11 @@ const camFor = (type: string, k: number, local: number, dur: number): {pos: [num
   }
 };
 
-const Cine: React.FC<BodyProps> = ({scenes, tl, family: famKey, hero}) => {
+const Cine: React.FC<BodyProps> = ({scenes, tl, family: famKey, hero, app}) => {
   const f = useCurrentFrame();
   const {width, height, fps, durationInFrames} = useVideoConfig();
-  const fam = family(famKey);
+  const fam = family(famKey, app);
+  const second = app ? theme(app).deep : BRAND.blue;
   const idx = Math.max(0, tl.findIndex((x) => f >= x.from && f < x.from + x.dur));
   const cur = tl[idx] ?? tl[0];
   const scene = scenes[idx] ?? scenes[0];
@@ -109,11 +112,11 @@ const Cine: React.FC<BodyProps> = ({scenes, tl, family: famKey, hero}) => {
   const bars = interpolate(f, [0, 40], [190, 0], clamp) + interpolate(f, [durationInFrames - 40, durationInFrames], [0, 190], clamp);
   return (
     <AbsoluteFill style={{background: FEED.bg}}>
-      <Stage width={width} height={height} bg={FEED.bg} accentA={fam.accent} accentB="#3B82F6" cam={cam} env dpr={1}>
+      <Stage width={width} height={height} bg={FEED.bg} accentA={fam.accent} accentB={second} cam={cam} env dpr={1}>
         <group position={[0, scene.type === 'end' ? -0.2 : 0.3, 0]} scale={Math.max(0.001, spring({frame: f - 10, fps, config: {damping: 18}}))}>
-          <Hero t={f} a={fam.accent} b="#3B82F6" appear={Math.min(1, f / 40)} />
+          <Hero t={f} a={fam.accent} b={second} appear={Math.min(1, f / 40)} />
         </group>
-        <Floaters t={f} a={fam.accent} b="#3B82F6" appear={Math.min(1, f / 50)} />
+        <Floaters t={f} a={fam.accent} b={second} appear={Math.min(1, f / 50)} />
       </Stage>
       <AbsoluteFill style={{background: `linear-gradient(180deg, ${FEED.bg}f0 0%, ${FEED.bg}b0 30%, ${FEED.bg}00 48%, ${FEED.bg}00 70%, ${FEED.bg}d0 100%)`}} />
       {scenes.map((s, i) => (
@@ -211,7 +214,7 @@ const CineText: React.FC<{s: ReelScene; i: number; n: number; chapterNo: number;
 
 // ───────────────────────── RL02 · Documental claro ─────────────────────────
 
-const LIGHT = {bg: '#E9EEF6', ink: '#0E1A33', soft: '#5B6B86', red: '#E5322D', blue: '#2453D6'};
+let LIGHT = {bg: '#EAF1F9', ink: '#0A1F3D', soft: '#5A6B84', red: BRAND.deep, blue: BRAND.blue, tile: '#8FC1EC', tileEdge: '#5E9BD3', hot: '#BFD9F2', hotEdge: '#8DB6DE'};
 
 /** Baldosas 3D (CSS) que forman una cuadrícula, se dispersan y vuelven a ordenarse según la escena. */
 const Tiles: React.FC<{mode: number; f: number}> = ({mode, f}) => {
@@ -232,7 +235,7 @@ const Tiles: React.FC<{mode: number; f: number}> = ({mode, f}) => {
           const hot = mode >= 1 && (i * 13) % 11 === 0;
           return (
             <div key={i} style={{position: 'absolute', left: x, top: y, width: 132, height: 70, borderRadius: 12,
-              background: head ? '#7FA4EA' : hot ? '#F3A6A6' : '#FBFCFF', boxShadow: `0 ${8 + lift / 2}px 0 ${head ? '#5C80C8' : hot ? '#D07A7A' : '#C9D2E3'}, 0 ${20 + lift}px 30px rgba(14,26,51,0.18)`,
+              background: head ? LIGHT.tile : hot ? LIGHT.hot : '#FBFCFF', boxShadow: `0 ${8 + lift / 2}px 0 ${head ? LIGHT.tileEdge : hot ? LIGHT.hotEdge : '#C9D2E3'}, 0 ${20 + lift}px 30px rgba(14,26,51,0.18)`,
               transform: `translateZ(${lift + scatter * ((seed % 400) - 100)}px) rotate(${scatter * (seed % 90)}deg)`}} />
           );
         })}
@@ -241,7 +244,9 @@ const Tiles: React.FC<{mode: number; f: number}> = ({mode, f}) => {
   );
 };
 
-const Doc: React.FC<BodyProps> = ({scenes, tl}) => {
+const Doc: React.FC<BodyProps> = ({scenes, tl, app}) => {
+  const th = theme(app);
+  LIGHT = {...LIGHT, red: th.deep, blue: app ? th.deep : BRAND.blue, tile: app ? th.accent : '#8FC1EC', tileEdge: th.deep, hot: app ? `${th.accent}99` : '#BFD9F2', hotEdge: app ? th.deep : '#8DB6DE'};
   const f = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const idx = Math.max(0, tl.findIndex((x) => f >= x.from && f < x.from + x.dur));
@@ -323,14 +328,16 @@ const DocText: React.FC<{s: ReelScene; chNo: number; chapters: number; f: number
 
 // ───────────────────────── RL03 · Versus ─────────────────────────
 
-const VA = '#7DD3FC';
-const VB = '#FCD34D';
+let VA = BRAND.light;
+let VB = BRAND.violetLight;
 
 const Versus: React.FC<BodyProps> = ({scenes, tl, extra}) => {
   const f = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const a = extra?.a ?? {name: 'A'};
   const b = extra?.b ?? {name: 'B'};
+  VA = a.app ? theme(a.app).accent : BRAND.light;
+  VB = b.app ? theme(b.app).accent : BRAND.violetLight;
   const idx = Math.max(0, tl.findIndex((x) => f >= x.from && f < x.from + x.dur));
   // Marcador acumulado de las rondas ya vistas
   let sa = 0;
