@@ -366,6 +366,7 @@ Reglas:
 - "pregunta": una pregunta fácil de responder por mensaje sobre cómo trabajan (ej: "¿Usas ya Copilot en Teams?").
   El cta invita a responder por mensaje.
 - "reel": anuncia el Reel de hoy con curiosidad, sin destriparlo. El cta remite al perfil ("Lo tienes en el perfil").
+- Habla en nombre de la marca, en plural ("cuéntanos", "respóndenos"), nunca en primera persona del singular.
 - No vendas ni menciones cursos o servicios. Nada de clichés de IA ni emojis.
 """
 

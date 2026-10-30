@@ -35,7 +35,8 @@ export const Story: React.FC<StoryProps> = (p) => {
   const push = interpolate(f, [0, durationInFrames], [13.5, 11.5]);
   const az = 0.25 + Math.sin(f / 90) * 0.12;
   const titleLen = p.title.length;
-  const size = titleLen <= 22 ? 112 : titleLen <= 38 ? 98 : 86;
+  const size = titleLen <= 22 ? 112 : titleLen <= 38 ? 96 : 84;
+  const bodySize = p.body.length > 110 ? 42 : 46;
   const cta = sp(f, fps, CTA_AT, 12, 0.6);
   const brand: Brand = p.brand;
   return (
@@ -49,17 +50,17 @@ export const Story: React.FC<StoryProps> = (p) => {
       </Stage>
       <AbsoluteFill style={{background: `linear-gradient(180deg, ${brand.bg}00 0%, ${brand.bg}00 42%, ${brand.bg}b8 60%, ${brand.bg}ee 100%)`}} />
 
-      <div style={{position: 'absolute', left: 80, right: 80, top: 990, display: 'flex', flexDirection: 'column', gap: 34}}>
+      {/* Título, detalle y remate en una sola columna: el remate va siempre detrás del texto, nunca encima.
+          Todo cabe antes de y=1680, donde empieza la caja de respuesta de Instagram. */}
+      <div style={{position: 'absolute', left: 80, right: 80, top: 940, display: 'flex', flexDirection: 'column', gap: 30}}>
         <KineticText text={p.title} highlight={p.highlight} size={size} a={brand.accentA} b={brand.accentB} color={brand.text} delay={24} />
         {p.body && (
-          <div style={{fontFamily: BODY, fontWeight: 600, fontSize: 48, lineHeight: 1.3, color: '#c9d1ee', ...fadeUp(f, fps, 40, 30)}}>
+          <div style={{fontFamily: BODY, fontWeight: 600, fontSize: bodySize, lineHeight: 1.3, color: '#c9d1ee', ...fadeUp(f, fps, 40, 30)}}>
             {p.body}
           </div>
         )}
-      </div>
-
-      {p.cta && (
-        <div style={{position: 'absolute', left: 0, right: 0, top: 1540, display: 'flex', justifyContent: 'center'}}>
+        {p.cta && (
+        <div style={{marginTop: 10, display: 'flex', justifyContent: 'center'}}>
           <div
             style={{
               padding: '24px 44px', borderRadius: 999, fontFamily: BODY, fontWeight: 800, fontSize: 40, color: '#fff',
@@ -70,7 +71,8 @@ export const Story: React.FC<StoryProps> = (p) => {
             {p.cta}
           </div>
         </div>
-      )}
+        )}
+      </div>
 
       <FormatHeader brand={brand} format={p.badge} label={p.label} hideFrom={durationInFrames + 30} />
       <FilmFinish />
