@@ -47,7 +47,7 @@
       "id": "1030-1355-1",
       "day": "2026-10-30",
       "at": "18:26",
-      "status": "scheduled",
+      "status": "published",
       "origin": "nightly",
       "kind": "truco",
       "label": "TRUCO RÁPIDO",
@@ -57,7 +57,9 @@
       "file": "story1.mp4",
       "thumb": "story1.jpg",
       "source_url": null,
-      "source": null
+      "source": null,
+      "media_id": "18146725735587995",
+      "published_at": "2026-10-30T19:18+01:00"
     },
     {
       "id": "1030-1355-2",
