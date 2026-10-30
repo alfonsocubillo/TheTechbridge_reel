@@ -16,17 +16,17 @@ let failed = 0;
 for (const [i, job] of jobs.entries()) {
   const t0 = Date.now();
   try {
-    const composition = await selectComposition({serveUrl, id: job.composition, inputProps: job.props, chromiumOptions: {gl}});
+    const composition = await selectComposition({serveUrl, id: job.composition, inputProps: job.props, chromiumOptions: {gl}, timeoutInMilliseconds: 120000});
     fs.mkdirSync(path.dirname(job.out), {recursive: true});
     if (job.kind === 'still') {
       await renderStill({
         serveUrl, composition, inputProps: job.props, output: job.out, frame: job.frame ?? 0, scale: job.scale ?? 1,
-        imageFormat: job.out.endsWith('.png') ? 'png' : 'jpeg', jpegQuality: 93, chromiumOptions: {gl},
+        imageFormat: job.out.endsWith('.png') ? 'png' : 'jpeg', jpegQuality: 93, chromiumOptions: {gl}, timeoutInMilliseconds: 120000,
       });
     } else {
       await renderMedia({
         serveUrl, composition, inputProps: job.props, outputLocation: job.out, codec: 'h264', crf: job.crf ?? 18,
-        audioCodec: 'aac', audioBitrate: '192k', concurrency, chromiumOptions: {gl}, imageFormat: 'jpeg', jpegQuality: 92,
+        audioCodec: 'aac', audioBitrate: '192k', concurrency, chromiumOptions: {gl}, imageFormat: 'jpeg', jpegQuality: 92, timeoutInMilliseconds: 120000,
       });
     }
     console.log(`OK ${i + 1}/${jobs.length} ${job.composition} → ${path.basename(job.out)} (${((Date.now() - t0) / 1000).toFixed(1)} s)`);

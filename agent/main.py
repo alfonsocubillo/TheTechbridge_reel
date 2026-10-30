@@ -152,7 +152,7 @@ def build_props(cfg: dict, sb: dict, fmt_key: str, history: list[dict]) -> dict:
 def remotion(*args: str) -> None:
     """Remotion con 3D por software (GitHub no tiene tarjeta gráfica; en local se puede usar RENDER_GL=angle)."""
     npx = shutil.which("npx") or "npx"  # en Windows es npx.cmd
-    subprocess.run([npx, "remotion", *args, f"--gl={env('RENDER_GL', 'swangle')}"], cwd=VIDEO_DIR, check=True)
+    subprocess.run([npx, "remotion", *args, f"--gl={env('RENDER_GL', 'swangle')}", "--timeout=120000"], cwd=VIDEO_DIR, check=True)
 
 
 def render(props: dict) -> None:
