@@ -74,6 +74,22 @@
       "thumb": "story2.jpg",
       "source_url": null,
       "source": null
+    },
+    {
+      "id": "news10301532-0",
+      "day": "2026-10-30",
+      "at": "16:18",
+      "status": "scheduled",
+      "origin": "news",
+      "kind": "ultima_hora",
+      "label": "ÚLTIMA HORA",
+      "title": "Microsoft abre a empresas el motor de Copilot Studio",
+      "body": "El Copilot harness es la capa que da instrucciones, contexto y control a los agentes. Ya está disponible en Microsoft Foundry para crear agentes propios.",
+      "tag": "stories-20261030-1532",
+      "file": "news1532_0.mp4",
+      "thumb": "news1532_0.jpg",
+      "source_url": "https://blogs.microsoft.com/blog/2026/10/28/introducing-the-microsoft-copilot-harness-unlocking-the-potential-of-truly-multi-model-agentic-work/",
+      "source": "Microsoft · Blog oficial, 28 oct"
     }
   ],
   "news_check_day": "2026-10-30"
