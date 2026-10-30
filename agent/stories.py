@@ -120,3 +120,19 @@ def next_slot_day(cfg: dict, now: datetime, needed_minutes: int = 90) -> tuple[d
     if now.hour * 60 + now.minute + needed_minutes <= end:
         return now.date(), now
     return now.date() + timedelta(days=1), None
+
+
+DEMO = [
+    {"kind": "noticia", "product": "Excel", "title": "Copilot ya trabaja dentro de Excel", "highlight": "Excel",
+     "body": "Crea tablas, fórmulas y gráficos a partir de una petición escrita, sin salir de la hoja.",
+     "cta": "¿Lo has probado ya?"},
+    {"kind": "pregunta", "product": "Teams", "title": "¿Cuántas reuniones tienes hoy?", "highlight": "reuniones",
+     "body": "Cuéntanos por mensaje cómo organizas la semana en Teams.", "cta": "Respóndenos por mensaje"},
+]
+
+
+if __name__ == "__main__":
+    # Prueba de render sin Claude: python -m agent.stories
+    from .common import load_config
+    for s in render_stories(load_config(), DEMO, reel_format="truco", prefix="demo"):
+        print(s["file"], s["thumb"])

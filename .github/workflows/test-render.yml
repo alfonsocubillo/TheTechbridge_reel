@@ -1,0 +1,40 @@
+name: Probar el render
+
+# Renderiza el guion de ejemplo y dos historias de muestra con el diseño actual. No usa Claude,
+# no toca el estado ni manda correos: sirve para ver cómo queda un cambio de diseño en GitHub.
+on:
+  workflow_dispatch:
+
+env:
+  PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+  PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-color-emoji > /dev/null
+          pip install -q -r requirements.txt
+          cd video && npm install --no-audit --no-fund && npx remotion browser ensure
+      - name: Reel y portada de ejemplo
+        run: python -m agent.main generate --storyboard ejemplo_storyboard.json
+      - name: Historias de muestra
+        run: python -m agent.stories
+      - uses: actions/upload-artifact@v4
+        with:
+          name: render-de-prueba
+          path: |
+            out/*.mp4
+            out/*.jpg
+          retention-days: 7

@@ -52,7 +52,19 @@ class ClaudeQuietHours(RuntimeError):
 
 def claude(system: str, user: str, images: list[dict] | None = None, fast: bool = False) -> str:
     """Hace una pregunta a Claude (sin herramientas) y devuelve el texto de la respuesta.
-    fast=True usa un modelo más ligero para tareas pequeñas (elegir noticia, clasificar un correo)."""
+    fast=True usa un modelo más ligero para tareas pequeñas (elegir noticia, clasificar un correo);
+    si ese modelo falla, se repite con el principal para no perder el vídeo del día."""
+    if fast:
+        try:
+            return _claude_once(system, user, images, env("CLAUDE_FAST_MODEL", "claude-sonnet-5-5"))
+        except ClaudeQuietHours:
+            raise
+        except RuntimeError as e:
+            log.warning("El modelo ligero falló (%s); repito con el principal", str(e)[:200])
+    return _claude_once(system, user, images, env("CLAUDE_MODEL", "claude-opus-5-5"))
+
+
+def _claude_once(system: str, user: str, images: list[dict] | None, model: str) -> str:
     if not claude_allowed():
         raise ClaudeQuietHours("Franja protegida: el agente no usa Claude entre quiet_from y quiet_to (config/brand.yaml)")
     binary = _claude_bin()
@@ -61,8 +73,7 @@ def claude(system: str, user: str, images: list[dict] | None = None, fast: bool 
     message = {"type": "user", "message": {"role": "user",
                                            "content": [*(images or []), {"type": "text", "text": user}]}}
     cmd = [binary, "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose",
-           "--model", env("CLAUDE_FAST_MODEL", "claude-sonnet-5-5") if fast else env("CLAUDE_MODEL", "claude-opus-5-5"),
-           "--system-prompt", system,
+           "--model", model, "--system-prompt", system,
            "--tools", "", "--strict-mcp-config", "--no-session-persistence"]
     with tempfile.TemporaryDirectory() as cwd:  # carpeta vacía para que no lea nada del proyecto
         p = subprocess.run(cmd, input=json.dumps(message, ensure_ascii=False) + "\n", capture_output=True,

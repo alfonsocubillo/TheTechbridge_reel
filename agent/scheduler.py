@@ -397,6 +397,8 @@ def cmd_tick(args) -> None:
     mode = args.mode or ""
     if ":" in action:
         action, mode = action.split(":", 1)
+    if action == "stories" and not mode:
+        mode = "request" if story_requests(state) else "news"
     log.info("Acción: %s %s", action, mode)
 
     # Las tareas que usan Claude tienen intentos limitados: si algo falla no se repite cada 10 minutos
