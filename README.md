@@ -9,7 +9,7 @@ Cada día, sin que nadie toque nada:
 5. **Prepara la publicación.** Cada vídeo lleva una portada con la misma plantilla que los anteriores (el color depende del formato, así el perfil queda ordenado) y una descripción con gancho, pasos prácticos, llamada a guardar o compartir, pregunta final, firma de la marca y 5 hashtags.
 6. **Pide aprobación por email** y solo publica el Reel que la directora aprueba. Las historias salen solas, pero las ve en el correo y puede cancelarlas.
 
-> **Instagram está desactivado por ahora.** Todo funciona igual, pero al aprobar un vídeo no se sube: a la hora de publicar llega un correo con el vídeo, la portada y el texto para subirlo a mano. Para activarlo, mira [Activar Instagram](#activar-instagram).
+> **Instagram conectado** a @thetechbridgesolution. El token hay que renovarlo antes del **29 de diciembre de 2026**: mira [Renovar el token de Instagram](#renovar-el-token-de-instagram-antes-del-29-de-diciembre-de-2026). Si se apaga la variable `INSTAGRAM_PUBLISH`, al aprobar un vídeo llega un correo con el vídeo, la portada y el texto para subirlo a mano.
 
 ## El día a día (horario de Madrid)
 
@@ -123,6 +123,25 @@ El horario interno de GitHub se queda como respaldo por si el servicio externo f
 3. En **Settings → Secrets and variables → Actions → Variables**, pon `INSTAGRAM_PUBLISH` a `true`.
 
 Desde ese momento, lo que apruebe la directora se publica solo con su portada. Para volver a desactivarlo, pon la variable a `false`.
+
+### Renovar el token de Instagram (antes del 29 de diciembre de 2026)
+El agente publica con el token de la página de Facebook **The TechBridge Solution**, que está vinculada a @thetechbridgesolution. Meta da ese token como "sin caducidad", pero sale de un token personal de Paloma que **caduca el 29 de diciembre de 2026**. También deja de valer si Paloma cambia la contraseña de Facebook o quita el permiso a la app. Para no llevarse sorpresas, renuévalo en la semana del 22 de diciembre, o en cuanto llegue un correo de error al publicar.
+
+Se hace con la cuenta de Facebook de Paloma, en unos 5 minutos:
+
+1. Abre el [Explorador de la API Graph](https://developers.facebook.com/tools/explorer/).
+2. A la derecha, en **Meta App**, elige **TTBS reels**. En **User or Page**, deja **User Token**.
+3. En **Permissions**, comprueba que están estos seis: `pages_show_list`, `pages_read_engagement`, `business_management`, `instagram_basic`, `instagram_content_publish` y `public_profile`.
+4. Pulsa **Generate Access Token**. Cuando Facebook pregunte, marca la empresa de Meta y la página **The TechBridge Solution**. Si no pregunta y luego falla, quita la app en Facebook, en **Configuración → Integraciones empresariales**, y repite este paso.
+5. Copia el token, ábrelo en el [depurador de tokens](https://developers.facebook.com/tools/debug/accesstoken/), pulsa **Depurar** y después **Ampliar token de acceso**. Copia el token nuevo, el largo. Dura 60 días.
+6. Vuelve al Explorador, pega ese token largo en **Access Token** y consulta esto, con **GET**:
+   ```
+   1382390014962180?fields=access_token
+   ```
+   El número es el de la página. La respuesta trae un `access_token`: ese es el token de la página.
+7. En GitHub, ve a **Settings → Secrets and variables → Actions**, edita `IG_ACCESS_TOKEN` y pega el token de la página. `IG_USER_ID` no cambia.
+
+Para comprobarlo, pega el token de la página en el depurador: tiene que poner **Tipo: Page** y **Caduca: Nunca**. Si lo prefieres, pásale el token largo del paso 5 a Claude y hace él los pasos 6 y 7. Después, anota aquí la nueva fecha de caducidad del token personal.
 
 ---
 

@@ -180,7 +180,7 @@ Reglas para que funcione en Instagram (público de 35 a 60 años que trabaja en 
   (ej: "Si usas Excel a diario...", "Tu bandeja de Outlook no tiene por qué..."). Nada de preguntas vagas.
 - Promete un beneficio concreto y creíble (tiempo, errores, tranquilidad), sin exageraciones ni sensacionalismo.
 - Una sola idea por vídeo. Frases cortas que se lean de un vistazo, como si las leyera alguien con prisa.
-- Enseña el "cómo": un paso, un prompt o un antes/después concreto que se pueda probar hoy mismo.
+- Da algo útil y concreto, pero SIEMPRE con la forma que pide el formato (ver "QUÉ ES ESTE FORMATO").
 - El cierre ("outro") invita a guardar o compartir el vídeo, nunca a comprar ni a contactar.
 
 Reglas de contenido (MUY IMPORTANTES):
@@ -282,6 +282,7 @@ si hay imágenes, se te muestran adjuntas y puedes describir lo que se ve en ell
 Audiencia: {cfg['audience']}
 Tono: {cfg['tone']}
 Formato: {fmt_key} ("{fmt['label']}") — {fmt['brief']}
+{format_contract(cfg, fmt_key)}
 Temas recientes (no repetir): {recent_titles[-15:]}
 
 {source}
@@ -294,6 +295,8 @@ Temas recientes (no repetir): {recent_titles[-15:]}
         try:
             sb = _json(claude(system, prompt, images=images))
             validate(sb)
+            validate_format(sb, fmt_key)
+            sb["format"] = fmt_key
             return sb
         except (ValueError, KeyError, json.JSONDecodeError) as e:
             last_error = str(e)
@@ -308,6 +311,68 @@ def feedback_block(feedback: str | None) -> str:
 PETICIÓN DE LA DIRECTORA (prioridad máxima; síguela al pie de la letra salvo que obligue a inventar hechos):
 \"\"\"{feedback or 'No le convenció el anterior. Haz algo claramente distinto en tema y enfoque.'}\"\"\"
 """
+
+
+# Lo que cada etiqueta promete y lo que tiene que haber en el vídeo para que la etiqueta no mienta.
+# must = tipos de escena obligatorios · never = tipos prohibidos (p. ej. un prompt para copiar en una NOTICIA).
+FORMAT_RULES: dict[str, dict] = {
+    "noticia": {"must": [], "never": ["prompt"],
+                "is": "Cuenta UNA novedad concreta de la fuente: qué se ha anunciado, quién lo anuncia, qué cambia y "
+                      "para quién o desde cuándo. Es información, no un tutorial: nada de pasos ni de prompts para copiar."},
+    "dato": {"must": ["stat"], "never": ["prompt"],
+             "is": "Gira alrededor de UNA cifra real que sale de la fuente, en una escena 'stat', y explica qué "
+                   "significa en el día a día. Si no hay cifra real, no es un dato."},
+    "tendencia": {"must": [], "never": ["prompt"],
+                  "is": "Explica qué están empezando a hacer las empresas con el producto, apoyándote en la fuente. "
+                        "Ni tutorial ni prompt para copiar."},
+    "truco": {"must": ["list"], "never": ["prompt"],
+              "is": "Enseña UNA función o atajo real paso a paso: una escena 'list' con los pasos (dónde se pulsa, "
+                    "qué se elige). No es una noticia ni un prompt para copiar."},
+    "prompt": {"must": ["prompt"], "never": [],
+               "is": "Presenta UN prompt concreto para copiar en una escena 'prompt', con su resultado. El vídeo "
+                     "explica cuándo usarlo. No es una noticia."},
+    "antes_despues": {"must": ["compare"], "never": ["prompt"],
+                      "is": "Compara una tarea concreta de oficina antes y ahora con el producto, en una escena "
+                            "'compare' (left_title \"Antes\", right_title \"Ahora\")."},
+    "mito": {"must": ["compare"], "never": ["prompt"],
+             "is": "Desmonta UNA creencia frecuente sobre el producto: una escena 'compare' con left_title \"Mito\" y "
+                   "right_title \"Realidad\", y la explicación con matices."},
+}
+
+
+def format_contract(cfg: dict, fmt_key: str) -> str:
+    """Instrucciones del formato elegido + qué NO es (los demás formatos), para que la etiqueta diga la verdad."""
+    r = FORMAT_RULES.get(fmt_key, {"is": cfg["formats"][fmt_key]["brief"], "must": [], "never": []})
+    label = cfg["formats"][fmt_key]["label"]
+    others = ", ".join(f'{v["label"]}' for k, v in cfg["formats"].items() if k != fmt_key)
+    lines = [f'QUÉ ES ESTE FORMATO (el vídeo y la portada llevan la etiqueta "{label}", así que tiene que serlo de verdad):',
+             f"- {r['is']}"]
+    if r["must"]:
+        lines.append(f"- Obligatorio: al menos una escena de tipo {', '.join(r['must'])}.")
+    if r["never"]:
+        lines.append(f"- Prohibido: escenas de tipo {', '.join(r['never'])}.")
+    lines.append(f"- No lo conviertas en otro formato ({others}). El gancho, las escenas, la portada y la "
+                 f"descripción cuentan lo mismo que promete la etiqueta.")
+    return "\n".join(lines)
+
+
+def validate_format(sb: dict, fmt_key: str) -> None:
+    """La etiqueta del vídeo tiene que coincidir con lo que cuenta: noticia es noticia, prompt es prompt, dato es dato."""
+    rules = FORMAT_RULES.get(fmt_key) or {"must": [], "never": [], "is": ""}
+    types = {s.get("type") for s in sb["scenes"]}
+    label = fmt_key.upper()
+    for t in rules["never"]:
+        if t in types:
+            raise ValueError(f"{label} no puede llevar escenas {t}: " + rules["is"])
+    for t in rules["must"]:
+        if t not in types:
+            raise ValueError(f"{label} necesita una escena {t}: " + rules["is"])
+    if fmt_key == "mito":
+        cmp = next(s for s in sb["scenes"] if s["type"] == "compare")
+        if "mito" not in str(cmp.get("left_title", "")).lower():
+            raise ValueError("MITO necesita una escena compare con left_title \"Mito\" y right_title \"Realidad\"")
+    if sb.get("format") is not None and sb["format"] != fmt_key:
+        raise ValueError(f"el formato del guion ({sb['format']}) no coincide con el elegido ({fmt_key})")
 
 
 def validate(sb: dict) -> None:
@@ -378,7 +443,7 @@ Reglas:
     (licencia, plan, Windows/Mac/web) y desde cuándo, si el texto lo dice. Nada genérico ni que no esté en la fuente.
   · "source": el medio y, si se sabe, la fecha (ej: "Microsoft · Blog de Excel, 28 oct").
   Si la noticia no da para eso, mejor otro tipo de historia.
-- "truco": un truco real y comprobable (atajo, función, prompt corto).
+- "truco": un truco real y comprobable (atajo o función) con el paso concreto en el cuerpo. No es una noticia.
 - "dato": un dato real con su fuente en el cuerpo ("según Microsoft..."). Nunca inventes cifras.
 - "pregunta": una pregunta fácil de responder por mensaje sobre cómo trabajan (ej: "¿Usas ya Copilot en Teams?").
   El cta invita a responder por mensaje.
@@ -407,6 +472,10 @@ def validate_stories(data: dict, expected: int | None = None) -> list[dict]:
                 raise ValueError("una noticia necesita 2-3 'points' de máximo 10 palabras")
             if not s.get("source"):
                 raise ValueError("una noticia necesita 'source' (medio y fecha)")
+        if s["kind"] == "dato" and not re.search(r"\d", f"{s['title']} {s.get('body', '')}"):
+            raise ValueError("una historia 'dato' tiene que llevar la cifra en el título o el cuerpo")
+        if s["kind"] == "pregunta" and "?" not in str(s["title"]):
+            raise ValueError("una historia 'pregunta' tiene que preguntar algo en el título")
     return stories
 
 

@@ -167,6 +167,7 @@ def produce(storyboard: str | None = None, fmt: str | None = None, feedback: str
         sb = json.loads(open(storyboard, encoding="utf-8").read())
         writer.validate(sb)
         fmt_key = sb.get("format", "truco")
+        writer.validate_format(sb, fmt_key)
     else:
         used = {h.get("source_url") for h in history if h.get("source_url")}
         items = news.relevant(news.recent_news(cfg["sources"], used), cfg.get("products", []))
@@ -186,8 +187,17 @@ def produce(storyboard: str | None = None, fmt: str | None = None, feedback: str
         log.info("Formato: %s", fmt_key)
         if story:
             article = news.fetch_article_text(story["url"])
-        sb = writer.write_storyboard(cfg, fmt_key, story, article, recent_titles, feedback=feedback,
-                                     materials=materials, images=images)
+        try:
+            sb = writer.write_storyboard(cfg, fmt_key, story, article, recent_titles, feedback=feedback,
+                                         materials=materials, images=images)
+        except RuntimeError as e:
+            # Si el formato no se puede cumplir con honestidad (p. ej. un DATO sin cifra real), mejor un truco
+            # bien etiquetado que un vídeo cuya etiqueta no dice la verdad.
+            if fmt_key == "truco" or feedback is not None or materials or images:
+                raise
+            log.warning("No sale un '%s' que cumpla su formato (%s): hoy toca un truco", fmt_key, e)
+            fmt_key = "truco"
+            sb = writer.write_storyboard(cfg, fmt_key, None, "", recent_titles)
         log.info("Tema: %s", sb.get("topic"))
 
     built = build_props(cfg, sb, fmt_key, history)
