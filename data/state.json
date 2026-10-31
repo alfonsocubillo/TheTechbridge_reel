@@ -98,5 +98,9 @@
       "published_at": "2026-10-30T18:58+01:00"
     }
   ],
-  "news_check_day": "2026-10-30"
+  "news_check_day": "2026-10-30",
+  "gen_attempts": {
+    "day": "2026-10-31",
+    "n": 1
+  }
 }
