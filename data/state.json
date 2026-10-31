@@ -1,28 +1,27 @@
 {
   "item": {
-    "date": "2026-10-30T12:55:03+00:00",
+    "date": "2026-10-31T01:11:08+00:00",
     "format": "noticia",
     "format_label": "NOTICIA",
     "topic": "Copilot en Excel ya limpia datos",
     "source_url": "https://techcommunity.microsoft.com/t5/excel-blog/what-s-new-in-excel-october-2026/ba-p/4549758",
     "source_name": "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=ExcelBlog",
-    "caption": "La mitad de los errores de un informe no están en la fórmula, sino en los datos que la alimentan.\n\nMicrosoft ha anunciado en la actualización de octubre de Excel una nueva habilidad de Copilot: limpiar datos. Está disponible en Excel para Windows, Mac y web.\n\nCopilot en Excel revisa los datos y detecta problemas como espacios de más, textos escritos de forma inconsistente o números con formatos mezclados. Son justo los fallos que rompen un BUSCARV, descuadran una tabla dinámica o hacen que un informe no cuadre con otro.\n\nIdea práctica: antes de cruzar dos listados (clientes, proveedores, facturas), pasa la limpieza de datos con Copilot. Te ahorras descubrir el problema cuando el informe ya está en manos de dirección.\n\nEs una de las cinco capacidades nuevas de Copilot en Excel este mes.\n\nCompártelo con quien cuadra los informes a final de mes.\n\n¿Cuál es el error de datos que más tiempo te hace perder en Excel?\n\nFuente: Microsoft Tech Community (Excel Blog)\n\nCada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution\n\n#TheTechBridgeSolution #Excel #Copilot #productividad #analisisdedatos",
-    "cover_title": "Copilot ya limpia tus datos",
+    "caption": "Ese BUSCARX que no encuentra nada aunque el dato está ahí tiene casi siempre la misma causa, y Excel ya la detecta 👇\n\nEn su actualización de octubre de 2026, Microsoft añade cinco capacidades nuevas a Copilot en Excel. Una de ellas es limpiar datos: revisa la información en busca de espacios de más, textos escritos de forma inconsistente y números con formatos mezclados, y propone corregirlos.\n\n¿Por qué importa? Porque esos fallos pequeños son los que rompen fórmulas, búsquedas, tablas dinámicas, informes y también los análisis que hace la propia IA. Si los datos de partida están sucios, cualquier conclusión que saques de ellos también lo estará.\n\nLa función está disponible en Excel para Windows, Mac y web. Una idea para hoy: antes de montar la tabla dinámica del cierre de mes, pasa primero la limpieza de datos con Copilot en Excel. Te ahorras descubrir el error cuando el informe ya está enviado.\n\nCompártelo con quien en tu equipo prepara los informes con datos exportados de varios sitios.\n\n¿Qué te da más guerra en tus hojas: los espacios invisibles o las fechas que Excel no reconoce?\n\nFuente: Microsoft Tech Community (Excel Blog)\n\nCada día, una idea práctica de IA y Microsoft 365 para tu trabajo. Síguenos en @thetechbridgesolution\n\n#TheTechBridgeSolution #Excel #Copilot #limpiezadedatos #productividad",
+    "cover_title": "Excel ya limpia tus datos",
     "product": "Excel",
     "stock_ids": [
-      "pixabay:199545",
-      "pixabay:227567",
-      "pixabay:2176"
+      "pixabay:197946",
+      "pixabay:150883",
+      "pixabay:10839"
     ],
     "voice": false,
-    "id": "1030-1355",
-    "tag": "reel-20261030-1355",
-    "day": "2026-10-30",
+    "id": "1031-0211",
+    "tag": "reel-20261031-0211",
+    "day": "2026-10-31",
     "kind": "nightly",
     "attempt": 1,
-    "status": "emailed",
-    "private": null,
-    "emailed_at": "2026-10-30T14:09+01:00"
+    "status": "generated",
+    "private": null
   },
   "stories": [
     {
@@ -96,6 +95,54 @@
       "source": "Microsoft · Blog oficial, 28 oct",
       "media_id": "18347157499248978",
       "published_at": "2026-10-30T18:58+01:00"
+    },
+    {
+      "id": "1031-0211-0",
+      "day": "2026-10-31",
+      "at": "11:20",
+      "status": "scheduled",
+      "origin": "nightly",
+      "kind": "noticia",
+      "label": "NOTICIA",
+      "title": "SharePoint renueva su app móvil con todo junto",
+      "body": "La app rediseñada reúne en un solo sitio tus sitios de equipo, archivos, noticias y personas. Está pensada para trabajar sin estar en el escritorio.",
+      "tag": "reel-20261031-0211",
+      "file": "story0.mp4",
+      "thumb": "story0.jpg",
+      "source_url": "https://techcommunity.microsoft.com/t5/microsoft-sharepoint-blog/sharepoint-showcase-refreshed-sharepoint-mobile-app/ba-p/4535415",
+      "source": "Microsoft · Blog de SharePoint"
+    },
+    {
+      "id": "1031-0211-1",
+      "day": "2026-10-31",
+      "at": "17:30",
+      "status": "scheduled",
+      "origin": "nightly",
+      "kind": "truco",
+      "label": "TRUCO RÁPIDO",
+      "title": "Separa nombres y apellidos sin fórmulas en Excel",
+      "body": "Escribe a mano el primer resultado en la columna de al lado y pulsa Ctrl + E. Relleno rápido completa el resto siguiendo tu ejemplo.",
+      "tag": "reel-20261031-0211",
+      "file": "story1.mp4",
+      "thumb": "story1.jpg",
+      "source_url": null,
+      "source": null
+    },
+    {
+      "id": "1031-0211-2",
+      "day": "2026-10-31",
+      "at": "19:59",
+      "status": "scheduled",
+      "origin": "nightly",
+      "kind": "reel",
+      "label": "NUEVO REEL",
+      "title": "Copilot en Excel ya limpia tus datos",
+      "body": "Duplicados, espacios de más, formatos mezclados. Te enseñamos qué hace exactamente y dónde todavía conviene revisar a mano.",
+      "tag": "reel-20261031-0211",
+      "file": "story2.mp4",
+      "thumb": "story2.jpg",
+      "source_url": null,
+      "source": null
     }
   ],
   "news_check_day": "2026-10-30",
