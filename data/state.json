@@ -101,7 +101,7 @@
       "id": "1031-0211-0",
       "day": "2026-10-31",
       "at": "11:20",
-      "status": "scheduled",
+      "status": "published",
       "origin": "nightly",
       "kind": "noticia",
       "label": "NOTICIA",
@@ -111,7 +111,9 @@
       "file": "story0.mp4",
       "thumb": "story0.jpg",
       "source_url": "https://techcommunity.microsoft.com/t5/microsoft-sharepoint-blog/sharepoint-showcase-refreshed-sharepoint-mobile-app/ba-p/4535415",
-      "source": "Microsoft · Blog de SharePoint"
+      "source": "Microsoft · Blog de SharePoint",
+      "media_id": "17915929536516647",
+      "published_at": "2026-10-31T11:25+01:00"
     },
     {
       "id": "1031-0211-1",
